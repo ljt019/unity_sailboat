@@ -3,149 +3,124 @@ using System.Collections.Generic;
 
 public class WaterTiler : MonoBehaviour
 {
-    public GameObject waterTilePrefab;
-    public Transform playerTransform;
-    public float tileSize = 100f;
+    public GameObject waterTilePrefab; // Reference to the water tile prefab
+    public Transform boatTransform; // Reference to the player's transform
+    public float tileSize = 100f; // Size of each tile (ensure this matches your plane's scale)
+    public OceanAdvanced oceanAdvanced; // Reference to the OceanAdvanced script
 
     private Vector3 startPosition;
     private Queue<GameObject> tilePool = new Queue<GameObject>();
-    private Dictionary<Vector2, GameObject> activeTiles = new Dictionary<Vector2, GameObject>();
+    private HashSet<Vector3> activeTiles = new HashSet<Vector3>();
 
     void Start()
     {
-        if (waterTilePrefab == null || playerTransform == null)
+        if (oceanAdvanced == null)
         {
-            Debug.LogError("WaterTiler: Required references are missing!");
-            enabled = false;
+            Debug.LogError("OceanAdvanced reference is missing!");
             return;
         }
 
-        startPosition = playerTransform.position;
+        startPosition = boatTransform.position;
         InitializeTilePool();
         CreateInitialTiles();
-        Debug.Log($"WaterTiler initialized. Start position: {startPosition}, Tile size: {tileSize}");
     }
 
     void Update()
     {
-        if (playerTransform != null)
-        {
-            UpdateTiles();
-        }
+        UpdateTiles();
     }
 
     void InitializeTilePool()
     {
-        for (int i = 0; i < 9; i++) // Increase pool size to 9 (3x3 grid)
+        for (int i = 0; i < 4; i++) // 2x2 grid requires 4 tiles
         {
-            GameObject tile = Instantiate(waterTilePrefab, transform);
+            GameObject tile = Instantiate(waterTilePrefab);
             tile.SetActive(false);
             tilePool.Enqueue(tile);
         }
-        Debug.Log($"Tile pool initialized with {tilePool.Count} tiles");
     }
 
     void CreateInitialTiles()
     {
-        for (int x = -1; x <= 1; x++)
+        for (int x = -1; x <= 0; x++) // Adjusted for 2x2 grid
         {
-            for (int z = -1; z <= 1; z++)
+            for (int z = -1; z <= 0; z++)
             {
                 Vector3 position = new Vector3(
                     startPosition.x + x * tileSize,
-                    0, // Set y to 0 or your desired water level
+                    startPosition.y,
                     startPosition.z + z * tileSize);
 
                 ActivateTile(position);
             }
         }
-        Debug.Log($"Initial tiles created. Active tiles: {activeTiles.Count}");
     }
 
     void UpdateTiles()
     {
-        Vector3 playerPosition = playerTransform.position;
-        Vector2 currentTile = new Vector2(
-            Mathf.Round(playerPosition.x / tileSize) * tileSize,
-            Mathf.Round(playerPosition.z / tileSize) * tileSize);
+        Vector3 playerPosition = boatTransform.position;
+        Vector3 offset = playerPosition - startPosition;
 
-        List<Vector2> neededTiles = new List<Vector2>();
-        for (int x = -1; x <= 1; x++)
+        if (Mathf.Abs(offset.x) >= tileSize || Mathf.Abs(offset.z) >= tileSize)
         {
-            for (int z = -1; z <= 1; z++)
+            Vector3 moveDirection = new Vector3(
+                Mathf.Round(offset.x / tileSize) * tileSize,
+                0,
+                Mathf.Round(offset.z / tileSize) * tileSize);
+
+            startPosition += moveDirection;
+            MoveTiles(moveDirection);
+        }
+
+        // Update the ocean's position to follow the boat
+        oceanAdvanced.transform.position = new Vector3(playerPosition.x, oceanAdvanced.transform.position.y, playerPosition.z);
+    }
+
+    void MoveTiles(Vector3 moveDirection)
+    {
+        List<Vector3> newTiles = new List<Vector3>();
+
+        foreach (Vector3 position in activeTiles)
+        {
+            Vector3 newPosition = position - moveDirection;
+            if (Vector3.Distance(boatTransform.position, newPosition) <= tileSize * Mathf.Sqrt(2))
             {
-                neededTiles.Add(new Vector2(
-                    currentTile.x + x * tileSize,
-                    currentTile.y + z * tileSize));
+                newTiles.Add(newPosition);
+            }
+            else
+            {
+                DeactivateTile(position);
             }
         }
 
-        foreach (Vector2 tilePos in new List<Vector2>(activeTiles.Keys))
+        foreach (Vector3 position in newTiles)
         {
-            if (!neededTiles.Contains(tilePos))
-            {
-                DeactivateTile(tilePos);
-            }
-        }
-
-        foreach (Vector2 tilePos in neededTiles)
-        {
-            if (!activeTiles.ContainsKey(tilePos))
-            {
-                ActivateTile(new Vector3(tilePos.x, 0, tilePos.y));
-            }
-        }
-
-        Debug.Log($"Tiles updated. Active tiles: {activeTiles.Count}");
-        Debug.Log($"Player position: {playerPosition}, Current tile: {currentTile}");
-        Debug.Log($"Needed tiles: {string.Join(", ", neededTiles)}");
-        Debug.Log($"Active tiles: {string.Join(", ", activeTiles.Keys)}");
-        // Log tile positions 
-        foreach (Vector2 tilePos in activeTiles.Keys)
-        {
-            Debug.Log($"Active tile: {tilePos}");
+            ActivateTile(position);
         }
     }
 
     void ActivateTile(Vector3 position)
     {
-        Vector2 tileKey = new Vector2(position.x, position.z);
-        if (!activeTiles.ContainsKey(tileKey))
+        if (!activeTiles.Contains(position))
         {
             GameObject tile = GetPooledTile();
-            if (tile != null)
-            {
-                tile.transform.position = position;
-                tile.SetActive(true);
-                activeTiles[tileKey] = tile;
-                if (OceanController.Instance != null)
-                {
-                    OceanController.Instance.ApplyOceanToTile(tile);
-                }
-                else
-                {
-                    Debug.LogWarning("OceanController.Instance is null. Cannot apply ocean to tile.");
-                }
-                Debug.Log($"Tile activated at position: {position}");
-            }
-            else
-            {
-                Debug.LogWarning("WaterTiler: Failed to get a pooled tile.");
-            }
+            tile.transform.position = position;
+            tile.SetActive(true);
+            activeTiles.Add(position);
+
+            // Apply ocean material and properties to the new tile
+            ApplyOceanToTile(tile);
         }
     }
 
-    void DeactivateTile(Vector2 tileKey)
+    void DeactivateTile(Vector3 position)
     {
-        if (activeTiles.TryGetValue(tileKey, out GameObject tile))
+        if (activeTiles.Contains(position))
         {
-            if (tile != null)
-            {
-                tile.SetActive(false);
-                tilePool.Enqueue(tile);
-            }
-            activeTiles.Remove(tileKey);
-            Debug.Log($"Tile deactivated at position: {tileKey}");
+            GameObject tile = GetTileAtPosition(position);
+            tile.SetActive(false);
+            activeTiles.Remove(position);
+            tilePool.Enqueue(tile);
         }
     }
 
@@ -155,30 +130,34 @@ public class WaterTiler : MonoBehaviour
         {
             return tilePool.Dequeue();
         }
-        else if (waterTilePrefab != null)
-        {
-            Debug.Log("Creating new tile as pool is empty");
-            return Instantiate(waterTilePrefab, transform);
-        }
         else
         {
-            Debug.LogError("WaterTiler: Water tile prefab is missing!");
-            return null;
+            return Instantiate(waterTilePrefab);
         }
     }
 
-    public void UpdateAllTiles()
+    GameObject GetTileAtPosition(Vector3 position)
     {
-        if (OceanController.Instance == null)
+        foreach (Transform child in transform)
         {
-            Debug.LogWarning("OceanController.Instance is null. Cannot update tiles.");
-            return;
+            if (Vector3.Distance(child.position, position) < 0.1f)
+            {
+                return child.gameObject;
+            }
+        }
+        return null;
+    }
+
+    void ApplyOceanToTile(GameObject tile)
+    {
+        // Apply the ocean material to the tile
+        Renderer tileRenderer = tile.GetComponent<Renderer>();
+        if (tileRenderer != null && oceanAdvanced.ocean != null)
+        {
+            tileRenderer.material = oceanAdvanced.ocean;
         }
 
-        foreach (GameObject tile in activeTiles.Values)
-        {
-            OceanController.Instance.ApplyOceanToTile(tile);
-        }
-        Debug.Log($"All tiles updated. Active tiles: {activeTiles.Count}");
+        // You might need to add additional components or scripts to the tile
+        // to make it work with the OceanAdvanced system
     }
 }

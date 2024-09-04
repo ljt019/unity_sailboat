@@ -3,157 +3,166 @@ using System.Collections;
 
 public class OceanAdvanced : MonoBehaviour
 {
-  [System.Serializable]
-  public class Wave
+  class Wave
   {
-    public float waveLength;
-    public float speed;
-    public float amplitude;
-    public float sharpness;
-    public Vector2 direction;
+    public float waveLength { get; private set; }
+    public float speed { get; private set; }
+    public float amplitude { get; private set; }
+    public float sharpness { get; private set; }
+    public float frequency { get; private set; }
+    public float phase { get; private set; }
+    public Vector2 direction { get; private set; }
 
-    [System.NonSerialized] public float frequency;
-    [System.NonSerialized] public float phase;
-
-    public void UpdateFrequencyAndPhase()
+    public Wave(float waveLength, float speed, float amplitude, float sharpness, Vector2 direction)
     {
+      this.waveLength = waveLength;
+      this.speed = speed;
+      this.amplitude = amplitude;
+      this.sharpness = sharpness;
+      this.direction = direction.normalized;
       frequency = 2 * Mathf.PI / waveLength;
       phase = frequency * speed;
     }
 
     public static Wave Lerp(Wave a, Wave b, float t)
     {
-      return new Wave
-      {
-        waveLength = Mathf.Lerp(a.waveLength, b.waveLength, t),
-        speed = Mathf.Lerp(a.speed, b.speed, t),
-        amplitude = Mathf.Lerp(a.amplitude, b.amplitude, t),
-        sharpness = Mathf.Lerp(a.sharpness, b.sharpness, t),
-        direction = Vector2.Lerp(a.direction, b.direction, t).normalized
-      };
+      return new Wave(
+          Mathf.Lerp(a.waveLength, b.waveLength, t),
+          Mathf.Lerp(a.speed, b.speed, t),
+          Mathf.Lerp(a.amplitude, b.amplitude, t),
+          Mathf.Lerp(a.sharpness, b.sharpness, t),
+          Vector2.Lerp(a.direction, b.direction, t)
+      );
     }
-  }
+  };
 
   public Material ocean;
   public Light sun;
 
   private int interaction_id = 0;
-  private Vector4[] interactions;
+  private Vector4[] interactions = new Vector4[NB_INTERACTIONS];
 
   const int NB_WAVE = 5;
   const int NB_INTERACTIONS = 64;
 
-  [SerializeField] private Wave[] calmWaves = new Wave[NB_WAVE];
-  [SerializeField] private Wave[] stormyWaves = new Wave[NB_WAVE];
-  private Wave[] activeWaves = new Wave[NB_WAVE];
+  static Wave[] calmWaves =
+  {
+        new Wave(99, 0.5f, 0.2f, 0.5f, new Vector2(1.0f, 0.2f)),
+        new Wave(60, 0.6f, 0.1f, 0.3f, new Vector2(1.0f, 3.0f)),
+        new Wave(20, 1.5f, 0.05f, 0.4f, new Vector2(2.0f, 4.0f)),
+        new Wave(30, 1.0f, 0.05f, 0.2f, new Vector2(-1.0f, 0.0f)),
+        new Wave(10, 1.5f, 0.01f, 0.5f, new Vector2(-1.0f, 1.2f))
+    };
 
-  private Vector4[] v_waves;
-  private Vector4[] v_waves_dir;
+  static Wave[] stormyWaves =
+  {
+        new Wave(99, 2.0f, 2.8f, 0.9f, new Vector2(1.0f, 0.2f)),
+        new Wave(60, 2.4f, 1.6f, 0.7f, new Vector2(1.0f, 3.0f)),
+        new Wave(20, 7.0f, 0.8f, 0.8f, new Vector2(2.0f, 4.0f)),
+        new Wave(30, 4.0f, 0.8f, 0.6f, new Vector2(-1.0f, 0.0f)),
+        new Wave(10, 6.0f, 0.1f, 0.9f, new Vector2(-1.0f, 1.2f))
+    };
 
-  private float currentWaveHeightMultiplier = 1f;
-  private float targetWaveHeightMultiplier = 1f;
-  private float waveTransitionSpeed = 0.1f;
+  static Wave[] activeWaves = new Wave[NB_WAVE];
 
-  private Coroutine updateWavesCoroutine;
+  public enum WaterState
+  {
+    Calm,
+    Stormy
+  }
 
-  private static OceanAdvanced Instance;
+  private WaterState currentState = WaterState.Calm;
+  private WaterState targetState = WaterState.Calm;
+  private float transitionProgress = 1f;
 
-  public Shader oceanShader;
+  [SerializeField]
+  public const float transitionDuration = 10f; // Duration of transition in seconds
 
   void Awake()
   {
-    Instance = this;
-    interactions = new Vector4[NB_INTERACTIONS];
-    v_waves = new Vector4[NB_WAVE];
-    v_waves_dir = new Vector4[NB_WAVE];
-    InitializeWaves();
-    EnsureShaderAssigned();
+    InitializeActiveWaves();
+    SetWaterState(WaterState.Calm, true);
   }
 
-  void InitializeWaves()
+  void InitializeActiveWaves()
   {
     for (int i = 0; i < NB_WAVE; i++)
     {
-      calmWaves[i].UpdateFrequencyAndPhase();
-      stormyWaves[i].UpdateFrequencyAndPhase();
-      activeWaves[i] = new Wave();
+      activeWaves[i] = new Wave(
+          calmWaves[i].waveLength,
+          calmWaves[i].speed,
+          calmWaves[i].amplitude,
+          calmWaves[i].sharpness,
+          calmWaves[i].direction
+      );
     }
-    UpdateWaveArrays(1f);
   }
 
   void FixedUpdate()
   {
-    UpdateOceanMaterial();
-  }
-
-  void EnsureShaderAssigned()
-  {
-    if (ocean != null && oceanShader != null)
-    {
-      if (ocean.shader != oceanShader)
-      {
-        Debug.Log("Reassigning ocean shader");
-        ocean.shader = oceanShader;
-      }
-    }
-    else
-    {
-      Debug.LogError("Ocean material or shader is missing!");
-    }
-  }
-
-  private void UpdateOceanMaterial()
-  {
     ocean.SetVector("world_light_dir", -sun.transform.forward);
     ocean.SetVector("sun_color", new Vector4(sun.color.r, sun.color.g, sun.color.b, 0.0F));
 
-    currentWaveHeightMultiplier = Mathf.MoveTowards(currentWaveHeightMultiplier, targetWaveHeightMultiplier, waveTransitionSpeed * Time.deltaTime);
+    UpdateWaves();
+  }
 
+  public void SetWaterState(WaterState state, bool immediate = false)
+  {
+    if (state == currentState && transitionProgress == 1f) return;
+
+    targetState = state;
+    if (immediate)
+    {
+      currentState = targetState;
+      transitionProgress = 1f;
+      UpdateWaveArrays();
+    }
+    else if (transitionProgress == 1f)
+    {
+      StartCoroutine(TransitionWaterState());
+    }
+  }
+
+  private IEnumerator TransitionWaterState()
+  {
+    transitionProgress = 0f;
+    WaterState startState = currentState;
+
+    while (transitionProgress < 1f)
+    {
+      transitionProgress += Time.deltaTime / transitionDuration;
+      UpdateWaveArrays();
+      yield return null;
+    }
+
+    currentState = targetState;
+    transitionProgress = 1f;
+  }
+
+  private void UpdateWaveArrays()
+  {
     for (int i = 0; i < NB_WAVE; i++)
     {
-      v_waves[i].x = activeWaves[i].frequency;
-      v_waves[i].y = activeWaves[i].amplitude * currentWaveHeightMultiplier;
-      v_waves[i].z = activeWaves[i].phase;
-      v_waves[i].w = activeWaves[i].sharpness;
+      activeWaves[i] = Wave.Lerp(
+          currentState == WaterState.Calm ? calmWaves[i] : stormyWaves[i],
+          targetState == WaterState.Calm ? calmWaves[i] : stormyWaves[i],
+          transitionProgress
+      );
+    }
+  }
 
-      v_waves_dir[i].x = activeWaves[i].direction.x;
-      v_waves_dir[i].y = activeWaves[i].direction.y;
+  private void UpdateWaves()
+  {
+    Vector4[] v_waves = new Vector4[NB_WAVE];
+    Vector4[] v_waves_dir = new Vector4[NB_WAVE];
+    for (int i = 0; i < NB_WAVE; i++)
+    {
+      v_waves[i] = new Vector4(activeWaves[i].frequency, activeWaves[i].amplitude, activeWaves[i].phase, activeWaves[i].sharpness);
+      v_waves_dir[i] = new Vector4(activeWaves[i].direction.x, activeWaves[i].direction.y, 0, 0);
     }
 
     ocean.SetVectorArray("waves_p", v_waves);
     ocean.SetVectorArray("waves_d", v_waves_dir);
-    ocean.SetVectorArray("interactions", interactions);
-  }
-
-  public void SetWaveHeight(float height)
-  {
-    targetWaveHeightMultiplier = height;
-    if (updateWavesCoroutine != null)
-    {
-      StopCoroutine(updateWavesCoroutine);
-    }
-    updateWavesCoroutine = StartCoroutine(UpdateWavesOverTime());
-  }
-
-  private IEnumerator UpdateWavesOverTime()
-  {
-    float t = 0f;
-    while (t < 1f)
-    {
-      t += Time.deltaTime;
-      UpdateWaveArrays(t);
-      yield return null;
-    }
-    UpdateWaveArrays(1f);
-  }
-
-  private void UpdateWaveArrays(float t)
-  {
-    for (int i = 0; i < NB_WAVE; i++)
-    {
-      activeWaves[i] = Wave.Lerp(calmWaves[i], stormyWaves[i], t);
-      activeWaves[i].UpdateFrequencyAndPhase();
-    }
   }
 
   public void RegisterInteraction(Vector3 pos, float strength)
@@ -162,32 +171,26 @@ public class OceanAdvanced : MonoBehaviour
     interactions[interaction_id].y = pos.z;
     interactions[interaction_id].z = strength;
     interactions[interaction_id].w = Time.time;
+    ocean.SetVectorArray("interactions", interactions);
     interaction_id = (interaction_id + 1) % NB_INTERACTIONS;
   }
 
-  public static float GetWaterHeight(Vector3 p)
+  static public float GetWaterHeight(Vector3 p)
   {
-    if (Instance == null || Instance.activeWaves == null)
+    if (activeWaves == null || activeWaves.Length == 0)
     {
-      Debug.LogWarning("OceanAdvanced instance or activeWaves is null. Returning 0 for water height.");
-      return 0f;
+      Debug.LogWarning("ActiveWaves not initialized in OceanAdvanced. Returning 0 for water height.");
+      return 0;
     }
 
-    float height = 0f;
+    float height = 0;
     for (int i = 0; i < NB_WAVE; i++)
     {
-      Wave wave = Instance.activeWaves[i];
-      height += wave.amplitude * Instance.currentWaveHeightMultiplier *
-                Mathf.Sin(Vector2.Dot(wave.direction, new Vector2(p.x, p.z)) * wave.frequency + Time.time * wave.phase);
+      if (activeWaves[i] != null)
+      {
+        height += activeWaves[i].amplitude * Mathf.Sin(Vector2.Dot(activeWaves[i].direction, new Vector2(p.x, p.z)) * activeWaves[i].frequency + Time.time * activeWaves[i].phase);
+      }
     }
     return height;
-  }
-
-  private void OnDisable()
-  {
-    if (Instance == this)
-    {
-      Instance = null;
-    }
   }
 }
