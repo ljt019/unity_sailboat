@@ -9,7 +9,7 @@ public class WaterTiler : MonoBehaviour
 
     private Vector3 startPosition;
     private Queue<GameObject> tilePool = new Queue<GameObject>();
-    private Dictionary<Vector3, GameObject> activeTiles = new Dictionary<Vector3, GameObject>();
+    private Dictionary<Vector2, GameObject> activeTiles = new Dictionary<Vector2, GameObject>();
 
     void Start()
     {
@@ -23,6 +23,7 @@ public class WaterTiler : MonoBehaviour
         startPosition = playerTransform.position;
         InitializeTilePool();
         CreateInitialTiles();
+        Debug.Log($"WaterTiler initialized. Start position: {startPosition}, Tile size: {tileSize}");
     }
 
     void Update()
@@ -35,87 +36,97 @@ public class WaterTiler : MonoBehaviour
 
     void InitializeTilePool()
     {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 9; i++) // Increase pool size to 9 (3x3 grid)
         {
             GameObject tile = Instantiate(waterTilePrefab, transform);
             tile.SetActive(false);
             tilePool.Enqueue(tile);
         }
+        Debug.Log($"Tile pool initialized with {tilePool.Count} tiles");
     }
 
     void CreateInitialTiles()
     {
-        for (int x = -1; x <= 0; x++)
+        for (int x = -1; x <= 1; x++)
         {
-            for (int z = -1; z <= 0; z++)
+            for (int z = -1; z <= 1; z++)
             {
                 Vector3 position = new Vector3(
                     startPosition.x + x * tileSize,
-                    startPosition.y,
+                    0, // Set y to 0 or your desired water level
                     startPosition.z + z * tileSize);
 
                 ActivateTile(position);
             }
         }
+        Debug.Log($"Initial tiles created. Active tiles: {activeTiles.Count}");
     }
 
     void UpdateTiles()
     {
         Vector3 playerPosition = playerTransform.position;
-        Vector3 offset = playerPosition - startPosition;
+        Vector2 currentTile = new Vector2(
+            Mathf.Round(playerPosition.x / tileSize) * tileSize,
+            Mathf.Round(playerPosition.z / tileSize) * tileSize);
 
-        if (Mathf.Abs(offset.x) >= tileSize || Mathf.Abs(offset.z) >= tileSize)
+        List<Vector2> neededTiles = new List<Vector2>();
+        for (int x = -1; x <= 1; x++)
         {
-            Vector3 moveDirection = new Vector3(
-                Mathf.Round(offset.x / tileSize) * tileSize,
-                0,
-                Mathf.Round(offset.z / tileSize) * tileSize);
-
-            startPosition += moveDirection;
-            MoveTiles(moveDirection);
-        }
-    }
-
-    void MoveTiles(Vector3 moveDirection)
-    {
-        List<Vector3> tilesToRemove = new List<Vector3>();
-        List<Vector3> tilesToAdd = new List<Vector3>();
-
-        foreach (Vector3 position in activeTiles.Keys)
-        {
-            Vector3 newPosition = position - moveDirection;
-            if (Vector3.Distance(playerTransform.position, newPosition) <= tileSize * Mathf.Sqrt(2))
+            for (int z = -1; z <= 1; z++)
             {
-                tilesToAdd.Add(newPosition);
-            }
-            else
-            {
-                tilesToRemove.Add(position);
+                neededTiles.Add(new Vector2(
+                    currentTile.x + x * tileSize,
+                    currentTile.y + z * tileSize));
             }
         }
 
-        foreach (Vector3 position in tilesToRemove)
+        foreach (Vector2 tilePos in new List<Vector2>(activeTiles.Keys))
         {
-            DeactivateTile(position);
+            if (!neededTiles.Contains(tilePos))
+            {
+                DeactivateTile(tilePos);
+            }
         }
 
-        foreach (Vector3 position in tilesToAdd)
+        foreach (Vector2 tilePos in neededTiles)
         {
-            ActivateTile(position);
+            if (!activeTiles.ContainsKey(tilePos))
+            {
+                ActivateTile(new Vector3(tilePos.x, 0, tilePos.y));
+            }
+        }
+
+        Debug.Log($"Tiles updated. Active tiles: {activeTiles.Count}");
+        Debug.Log($"Player position: {playerPosition}, Current tile: {currentTile}");
+        Debug.Log($"Needed tiles: {string.Join(", ", neededTiles)}");
+        Debug.Log($"Active tiles: {string.Join(", ", activeTiles.Keys)}");
+        // Log tile positions 
+        foreach (Vector2 tilePos in activeTiles.Keys)
+        {
+            Debug.Log($"Active tile: {tilePos}");
         }
     }
 
     void ActivateTile(Vector3 position)
     {
-        if (!activeTiles.ContainsKey(position))
+        Vector2 tileKey = new Vector2(position.x, position.z);
+        if (!activeTiles.ContainsKey(tileKey))
         {
             GameObject tile = GetPooledTile();
             if (tile != null)
             {
                 tile.transform.position = position;
                 tile.SetActive(true);
-                activeTiles[position] = tile;
-                OceanController.Instance.ApplyOceanToTile(tile);
+                activeTiles[tileKey] = tile;
+                if (OceanController.Instance != null)
+                {
+                    OceanController.Instance.ApplyOceanToTile(tile);
+                }
+                else
+                {
+                    Debug.LogWarning("OceanController.Instance is null. Cannot apply ocean to tile.");
+                }
+                Debug.Log($"Tile activated at position: {position}");
             }
             else
             {
@@ -124,16 +135,17 @@ public class WaterTiler : MonoBehaviour
         }
     }
 
-    void DeactivateTile(Vector3 position)
+    void DeactivateTile(Vector2 tileKey)
     {
-        if (activeTiles.TryGetValue(position, out GameObject tile))
+        if (activeTiles.TryGetValue(tileKey, out GameObject tile))
         {
             if (tile != null)
             {
                 tile.SetActive(false);
                 tilePool.Enqueue(tile);
             }
-            activeTiles.Remove(position);
+            activeTiles.Remove(tileKey);
+            Debug.Log($"Tile deactivated at position: {tileKey}");
         }
     }
 
@@ -145,6 +157,7 @@ public class WaterTiler : MonoBehaviour
         }
         else if (waterTilePrefab != null)
         {
+            Debug.Log("Creating new tile as pool is empty");
             return Instantiate(waterTilePrefab, transform);
         }
         else
@@ -156,9 +169,16 @@ public class WaterTiler : MonoBehaviour
 
     public void UpdateAllTiles()
     {
+        if (OceanController.Instance == null)
+        {
+            Debug.LogWarning("OceanController.Instance is null. Cannot update tiles.");
+            return;
+        }
+
         foreach (GameObject tile in activeTiles.Values)
         {
             OceanController.Instance.ApplyOceanToTile(tile);
         }
+        Debug.Log($"All tiles updated. Active tiles: {activeTiles.Count}");
     }
 }

@@ -20,6 +20,9 @@ public class GameStateManager : MonoBehaviour
     public float stormStartDistance = 50f;
     public float escapeDistance = 100f;
 
+    private float stormStartDistanceSqr;
+    private float escapeDistanceSqr;
+
     private Vector3 journeyStartPosition;
     private Vector3 stormStartPosition;
     private Vector3 targetDirection;
@@ -28,6 +31,9 @@ public class GameStateManager : MonoBehaviour
     public SoundController soundController;
     public OceanController oceanController;
     public Transform playerTransform;
+
+    private float stateCheckInterval = 0.5f;
+    private float lastStateCheckTime = 0f;
 
     private void Awake()
     {
@@ -44,10 +50,21 @@ public class GameStateManager : MonoBehaviour
 
     private void Start()
     {
+        stormStartDistanceSqr = stormStartDistance * stormStartDistance;
+        escapeDistanceSqr = escapeDistance * escapeDistance;
         StartJourney();
     }
 
-    private void Update()
+    private void FixedUpdate()
+    {
+        if (Time.time - lastStateCheckTime >= stateCheckInterval)
+        {
+            CheckGameState();
+            lastStateCheckTime = Time.time;
+        }
+    }
+
+    private void CheckGameState()
     {
         switch (CurrentState)
         {
@@ -71,7 +88,7 @@ public class GameStateManager : MonoBehaviour
 
     private void CheckStormStart()
     {
-        if (Vector3.Distance(playerTransform.position, journeyStartPosition) >= stormStartDistance)
+        if ((playerTransform.position - journeyStartPosition).sqrMagnitude >= stormStartDistanceSqr)
         {
             StartStorm();
         }
@@ -90,15 +107,15 @@ public class GameStateManager : MonoBehaviour
     private void CheckStormNavigation()
     {
         Vector3 movementVector = playerTransform.position - stormStartPosition;
-        float distanceTraveled = Vector3.Project(movementVector, targetDirection).magnitude;
+        float distanceTraveledSqr = Vector3.Project(movementVector, targetDirection).sqrMagnitude;
 
-        if (distanceTraveled >= escapeDistance)
+        if (distanceTraveledSqr >= escapeDistanceSqr)
         {
             EscapeStorm();
         }
         else
         {
-            float weatherIntensity = 1f - (distanceTraveled / escapeDistance);
+            float weatherIntensity = 1f - (Mathf.Sqrt(distanceTraveledSqr) / escapeDistance);
             weatherController.UpdateWeatherIntensity(weatherIntensity);
             oceanController.UpdateOceanIntensity(weatherIntensity);
         }
@@ -128,6 +145,6 @@ public class GameStateManager : MonoBehaviour
     {
         if (CurrentState != GameState.InStorm) return 0f;
         Vector3 movementVector = playerTransform.position - stormStartPosition;
-        return Vector3.Project(movementVector, targetDirection).magnitude;
+        return Mathf.Sqrt(Vector3.Project(movementVector, targetDirection).sqrMagnitude);
     }
 }

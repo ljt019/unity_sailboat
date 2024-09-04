@@ -6,18 +6,15 @@ using ArchimedsLab;
 [RequireComponent(typeof(MeshFilter))]
 public class FloatingGameEntityRealist : GameEntity
 {
-  public Mesh buoyancyMesh;
   public Mesh simplifiedBuoyancyMesh;
 
   [SerializeField] private Vector3 meshOffset = new Vector3(0f, 0f, 0.5f);
 
-  /* These 4 arrays are cache array, preventing some operations to be done each frame. */
-  tri[] _triangles;
-  tri[] worldBuffer;
-  tri[] wetTris;
-  tri[] dryTris;
-  //These two variables will store the number of valid triangles in each cache arrays. They are different from array.Length !
-  uint nbrWet, nbrDry;
+  private tri[] _triangles;
+  private tri[] worldBuffer;
+  private tri[] wetTris;
+  private tri[] dryTris;
+  private uint nbrWet, nbrDry;
 
   [SerializeField] private float additionalAngularDamping = 0.5f;
   [SerializeField] private float additionalLinearDamping = 0.1f;
@@ -28,13 +25,26 @@ public class FloatingGameEntityRealist : GameEntity
 
   private Vector3 smoothedAngularVelocity;
 
-  WaterSurface.GetWaterHeight realist;
+  private WaterSurface.GetWaterHeight realist;
 
   protected override void Awake()
   {
     base.Awake();
 
-    // Initialize the water height sampling function
+    if (simplifiedBuoyancyMesh == null)
+    {
+      Debug.LogError("Simplified buoyancy mesh is not assigned!");
+      enabled = false;
+      return;
+    }
+
+    InitializeWaterSampling();
+    InitializeBuoyancyMesh();
+    AdjustCenterOfMass();
+  }
+
+  private void InitializeWaterSampling()
+  {
     realist = delegate (Vector3 pos)
     {
       float totalHeight = 0f;
@@ -43,30 +53,26 @@ public class FloatingGameEntityRealist : GameEntity
       {
         float angle = (float)i / waterSampleCount * 2f * Mathf.PI;
         Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * waterSampleRadius;
-        try
+        float height = OceanAdvanced.GetWaterHeight(pos + offset);
+        if (!float.IsNaN(height) && !float.IsInfinity(height))
         {
-          float height = OceanAdvanced.GetWaterHeight(pos + offset);
           totalHeight += height;
           validSamples++;
-        }
-        catch (System.NullReferenceException)
-        {
-          Debug.LogWarning("NullReferenceException caught in water height sampling. Skipping this sample.");
         }
       }
       return validSamples > 0 ? totalHeight / validSamples : 0f;
     };
+  }
 
-    //By default, this script will take the render mesh to compute forces. You can override it, using a simpler mesh.
-    Mesh m = simplifiedBuoyancyMesh != null ? simplifiedBuoyancyMesh :
-             (buoyancyMesh != null ? buoyancyMesh : GetComponent<MeshFilter>().mesh);
-
-    Mesh offsetMesh = ApplyMeshOffset(m, meshOffset);
-    //Setting up the cache for the game. Here we use variables with a game-long lifetime.
+  private void InitializeBuoyancyMesh()
+  {
+    Mesh offsetMesh = ApplyMeshOffset(simplifiedBuoyancyMesh, meshOffset);
     WaterCutter.CookCache(offsetMesh, ref _triangles, ref worldBuffer, ref wetTris, ref dryTris);
+  }
 
-    // Adjust center of mass
-    rb.centerOfMass = new Vector3(0, -0.5f, 0.2f); // Adjust as needed
+  private void AdjustCenterOfMass()
+  {
+    rb.centerOfMass = new Vector3(0, -0.5f, 0.2f);
   }
 
   private Mesh ApplyMeshOffset(Mesh originalMesh, Vector3 offset)
@@ -96,36 +102,37 @@ public class FloatingGameEntityRealist : GameEntity
 
     try
     {
-      // This will prepare static cache, modifying vertices using rotation and position offset.
-      WaterCutter.CookMesh(transform.position, transform.rotation, ref _triangles, ref worldBuffer);
-
-      // Split the mesh into wet and dry triangles
-      WaterCutter.SplitMesh(worldBuffer, ref wetTris, ref dryTris, out nbrWet, out nbrDry, realist);
-
-      // Compute and apply forces
-      Archimeds.ComputeAllForces(wetTris, dryTris, nbrWet, nbrDry, speed, rb);
-
-      // Apply additional damping
-      rb.angularVelocity *= (1f - additionalAngularDamping * Time.fixedDeltaTime);
-      rb.velocity *= (1f - additionalLinearDamping * Time.fixedDeltaTime);
-
-      // Apply stabilizing torque
-      Vector3 stabilizingTorque = Vector3.Cross(transform.up, Vector3.up) * this.stabilizationTorque;
-      rb.AddTorque(stabilizingTorque);
-
-      // Smooth angular velocity
-      smoothedAngularVelocity = Vector3.Lerp(smoothedAngularVelocity, rb.angularVelocity, angularVelocitySmoothing);
-      rb.angularVelocity = smoothedAngularVelocity;
+      UpdateBuoyancy();
+      ApplyAdditionalForces();
     }
     catch (System.Exception e)
     {
       Debug.LogError($"Exception in FloatingGameEntityRealist.FixedUpdate: {e.GetType().Name} - {e.Message}\n{e.StackTrace}");
-      // Handle the error gracefully, perhaps by skipping this frame's update
     }
   }
 
+  private void UpdateBuoyancy()
+  {
+    WaterCutter.CookMesh(transform.position, transform.rotation, ref _triangles, ref worldBuffer);
+    WaterCutter.SplitMesh(worldBuffer, ref wetTris, ref dryTris, out nbrWet, out nbrDry, realist);
+
+    // Use ComputeAllForces instead of ComputeForces
+    Archimeds.ComputeAllForces(wetTris, dryTris, nbrWet, nbrDry, speed, rb);
+  }
+
+  private void ApplyAdditionalForces()
+  {
+    rb.angularVelocity *= (1f - additionalAngularDamping * Time.fixedDeltaTime);
+    rb.velocity *= (1f - additionalLinearDamping * Time.fixedDeltaTime);
+
+    Vector3 stabilizingTorque = Vector3.Cross(transform.up, Vector3.up) * this.stabilizationTorque;
+    rb.AddTorque(stabilizingTorque);
+
+    smoothedAngularVelocity = Vector3.Lerp(smoothedAngularVelocity, rb.angularVelocity, angularVelocitySmoothing);
+    rb.angularVelocity = smoothedAngularVelocity;
+  }
+
 #if UNITY_EDITOR
-  //Some visualizations for this buoyancy script.
   protected override void OnDrawGizmos()
   {
     base.OnDrawGizmos();
@@ -133,6 +140,14 @@ public class FloatingGameEntityRealist : GameEntity
     if (!Application.isPlaying)
       return;
 
+    DrawBuoyancyMesh();
+    DrawCenterOfMass();
+    DrawUpVector();
+    DrawStabilizingTorque();
+  }
+
+  private void DrawBuoyancyMesh()
+  {
     Gizmos.color = Color.blue;
     for (uint i = 0; i < nbrWet; i++)
     {
@@ -148,16 +163,22 @@ public class FloatingGameEntityRealist : GameEntity
       Gizmos.DrawLine(dryTris[i].b, dryTris[i].c);
       Gizmos.DrawLine(dryTris[i].a, dryTris[i].c);
     }
+  }
 
-    // Visualize center of mass
+  private void DrawCenterOfMass()
+  {
     Gizmos.color = Color.red;
     Gizmos.DrawSphere(transform.TransformPoint(rb.centerOfMass), 0.2f);
+  }
 
-    // Visualize up vector
+  private void DrawUpVector()
+  {
     Gizmos.color = Color.green;
     Gizmos.DrawLine(transform.position, transform.position + transform.up * 2f);
+  }
 
-    // Visualize stabilizing torque
+  private void DrawStabilizingTorque()
+  {
     Gizmos.color = Color.cyan;
     Vector3 torqueDirection = Vector3.Cross(transform.up, Vector3.up).normalized;
     Gizmos.DrawLine(transform.position, transform.position + torqueDirection * stabilizationTorque);

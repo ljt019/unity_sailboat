@@ -25,7 +25,7 @@
 	#define NB_INTERACTIONS 64
 	#define WAVE_DURATION 4.0
 	#define WAVE_SPEED 3.0
-	#define MAX_WAVE_AMP 0.5
+	#define MAX_WAVE_AMP 1.5
 	float4 interactions[NB_INTERACTIONS];
 
 	uniform float4 world_light_dir;
@@ -344,7 +344,7 @@
 			//Cull Off
 		
 			CGPROGRAM
-		
+		 
 			#pragma target 3.0
 			#pragma vertex vert
 			#pragma fragment frag

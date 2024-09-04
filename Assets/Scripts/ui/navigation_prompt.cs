@@ -11,6 +11,9 @@ public class NavigationPrompt : MonoBehaviour
 
     private GameStateManager gameStateManager;
 
+    private float uiUpdateInterval = 0.2f;
+    private float lastUIUpdateTime = 0f;
+
     void Start()
     {
         if (promptText == null)
@@ -52,7 +55,11 @@ public class NavigationPrompt : MonoBehaviour
 
     void Update()
     {
-        UpdatePromptBasedOnGameState();
+        if (Time.time - lastUIUpdateTime >= uiUpdateInterval)
+        {
+            UpdatePromptBasedOnGameState();
+            lastUIUpdateTime = Time.time;
+        }
     }
 
     void HandleGameStateChanged(GameStateManager.GameState newState)

@@ -52,6 +52,20 @@ public class OceanController : MonoBehaviour
         oceanOffset = oceanAdvanced.transform.position - playerTransform.position;
         currentWaveHeight = calmWaveHeight;
         targetWaveHeight = calmWaveHeight;
+        Debug.Log($"OceanController initialized. Initial wave height: {currentWaveHeight}");
+    }
+
+    private void Start()
+    {
+        // Ensure WaterTiler is initialized after OceanController
+        if (waterTiler != null)
+        {
+            waterTiler.UpdateAllTiles();
+        }
+        else
+        {
+            Debug.LogError("WaterTiler reference is missing in OceanController!");
+        }
     }
 
     private void Update()
@@ -76,6 +90,7 @@ public class OceanController : MonoBehaviour
         {
             currentWaveHeight = Mathf.MoveTowards(currentWaveHeight, targetWaveHeight, Time.deltaTime / transitionDuration);
             SetWaveParameters(currentWaveHeight);
+            Debug.Log($"Wave height updated. Current: {currentWaveHeight}, Target: {targetWaveHeight}");
         }
     }
 
@@ -86,15 +101,14 @@ public class OceanController : MonoBehaviour
         currentState = state;
         targetWaveHeight = (state == OceanState.Calm) ? calmWaveHeight : stormyWaveHeight;
         OnOceanStateChanged?.Invoke(currentState);
+        Debug.Log($"Ocean state changed to {state}. Target wave height: {targetWaveHeight}");
     }
 
     private void SetWaveParameters(float waveHeight)
     {
-        // Update OceanAdvanced wave parameters
         oceanAdvanced.SetWaveHeight(waveHeight);
-
-        // Update all active water tiles
         waterTiler.UpdateAllTiles();
+        Debug.Log($"Wave parameters set. Height: {waveHeight}");
     }
 
     public float GetWaterHeight(Vector3 worldPosition)
@@ -120,7 +134,11 @@ public class OceanController : MonoBehaviour
         if (tileRenderer != null && oceanAdvanced.ocean != null)
         {
             tileRenderer.material = oceanAdvanced.ocean;
-            // Apply any additional ocean properties to the tile here
+            Debug.Log($"Ocean material applied to tile: {tile.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"Failed to apply ocean material to tile: {tile.name}");
         }
     }
 
@@ -136,10 +154,9 @@ public class OceanController : MonoBehaviour
 
     public void UpdateOceanIntensity(float intensity)
     {
-        // Example implementation: Adjust wave height based on intensity
         float waveHeight = Mathf.Lerp(calmWaveHeight, stormyWaveHeight, intensity);
         targetWaveHeight = waveHeight;
         SetWaveParameters(waveHeight);
+        Debug.Log($"Ocean intensity updated. Intensity: {intensity}, New target wave height: {targetWaveHeight}");
     }
-
 }
