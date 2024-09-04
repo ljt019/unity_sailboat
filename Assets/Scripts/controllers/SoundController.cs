@@ -3,6 +3,7 @@ using System.Collections;
 
 public class SoundController : MonoBehaviour
 {
+    [Header("Audio Source References")]
     public AudioSource calmAmbientSound;
     public AudioSource stormyAmbientSound;
 
@@ -13,6 +14,8 @@ public class SoundController : MonoBehaviour
     }
 
     private WeatherState currentWeatherState = WeatherState.Calm;
+
+    [Header("Transition Settings")]
     [SerializeField] private float transitionDelay = 2.0f; // Delay before starting the transition
     [SerializeField] private float transitionDuration = 5.0f; // Duration for fading between sounds
     [SerializeField] private float blendOverlap = 0.2f; // Amount of overlap between sounds (0.0 to 0.5)

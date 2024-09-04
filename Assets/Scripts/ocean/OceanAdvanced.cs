@@ -49,18 +49,26 @@ public class OceanAdvanced : MonoBehaviour
   {
         new Wave(99, 0.5f, 0.2f, 0.5f, new Vector2(1.0f, 0.2f)),
         new Wave(60, 0.6f, 0.1f, 0.3f, new Vector2(1.0f, 3.0f)),
-        new Wave(20, 1.5f, 0.05f, 0.4f, new Vector2(2.0f, 4.0f)),
-        new Wave(30, 1.0f, 0.05f, 0.2f, new Vector2(-1.0f, 0.0f)),
-        new Wave(10, 1.5f, 0.01f, 0.5f, new Vector2(-1.0f, 1.2f))
+        new Wave(20, 1.0f, 0.05f, 0.4f, new Vector2(2.0f, 4.0f)),
+        new Wave(30, 0.75f, 0.05f, 0.2f, new Vector2(-1.0f, 0.0f)),
+        new Wave(10, 1.0f, 0.01f, 0.5f, new Vector2(-1.0f, 1.2f))
+    };
+
+  static Wave[] chopppyWaves = {
+        new Wave(99, 0.8f, 0.3f, 0.5f, new Vector2(1.0f, 0.2f)),
+        new Wave(60, 1.2f, 0.2f, 0.3f, new Vector2(1.0f, 3.0f)),
+        new Wave(20, 1.5f, 0.1f, 0.4f, new Vector2(2.0f, 4.0f)),
+        new Wave(30, 1.25f, 0.1f, 0.2f, new Vector2(-1.0f, 0.0f)),
+        new Wave(10, 1.5f, 0.02f, 0.5f, new Vector2(-1.0f, 1.2f))
     };
 
   static Wave[] stormyWaves =
   {
-        new Wave(99, 2.0f, 2.8f, 0.9f, new Vector2(1.0f, 0.2f)),
-        new Wave(60, 2.4f, 1.6f, 0.7f, new Vector2(1.0f, 3.0f)),
-        new Wave(20, 7.0f, 0.8f, 0.8f, new Vector2(2.0f, 4.0f)),
-        new Wave(30, 4.0f, 0.8f, 0.6f, new Vector2(-1.0f, 0.0f)),
-        new Wave(10, 6.0f, 0.1f, 0.9f, new Vector2(-1.0f, 1.2f))
+        new Wave(99, 1.2f, 0.9f, 0.4f, new Vector2(1.0f, 0.2f)),
+        new Wave(60, 1.8f, 0.5f, 0.3f, new Vector2(1.0f, 3.0f)),
+        new Wave(20, 3.0f, 0.4f, 0.4f, new Vector2(2.0f, 4.0f)),
+        new Wave(30, 2.5f, 0.4f, 0.3f, new Vector2(-1.0f, 0.0f)),
+        new Wave(10, 3.5f, 0.08f, 0.6f, new Vector2(-1.0f, 1.2f))
     };
 
   static Wave[] activeWaves = new Wave[NB_WAVE];
@@ -68,6 +76,7 @@ public class OceanAdvanced : MonoBehaviour
   public enum WaterState
   {
     Calm,
+    Choppy,
     Stormy
   }
 

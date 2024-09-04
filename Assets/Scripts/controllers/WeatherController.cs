@@ -1,16 +1,22 @@
 using UnityEngine;
 using Tenkoku.Core;
 using System.Collections;
-using JetBrains.Annotations;
 
 public class WeatherController : MonoBehaviour
 {
     public TenkokuModule tenkokuModule;
 
-    private float initialRainAmt;
-    private float initialFogAmt;
-    private float initialLightningAmt;
-    private float initialOvercastAmt;
+    [Header("Calm Weather Settings")]
+    public float calmRainAmt = 0f;
+    public float calmFogAmt = 0f;
+    public float calmLightningAmt = 0f;
+    public float calmOvercastAmt = 0f;
+
+    [Header("Stormy Weather Settings")]
+    public float stormyRainAmt = 1.0f;
+    public float stormyFogAmt = 0.147f;
+    public float stormyLightningAmt = 0.543f;
+    public float stormyOvercastAmt = 0.104f;
 
     public float transitionSpeed = 0.5f;
 
@@ -31,15 +37,8 @@ public class WeatherController : MonoBehaviour
             }
         }
 
-        StoreInitialWeatherConditions();
-    }
-
-    void StoreInitialWeatherConditions()
-    {
-        initialRainAmt = tenkokuModule.weather_RainAmt;
-        initialFogAmt = tenkokuModule.weather_FogAmt;
-        initialLightningAmt = tenkokuModule.weather_lightning;
-        initialOvercastAmt = tenkokuModule.weather_OvercastAmt;
+        // Start with calm weather
+        ForceCalmWeather();
     }
 
     public void SetStormyWeather()
@@ -54,13 +53,26 @@ public class WeatherController : MonoBehaviour
         StartWeatherTransition();
     }
 
+    public void SetStormApproachingWeather()
+    {
+        targetIntensity = 0.1f;
+        StartWeatherTransition();
+    }
+
     public void ForceCalmWeather()
     {
-        tenkokuModule.weather_RainAmt = 0f;
-        tenkokuModule.weather_FogAmt = 0f;
-        tenkokuModule.weather_lightning = 0f;
-        tenkokuModule.weather_OvercastAmt = 0f;
-        tenkokuModule.weather_forceUpdate = true;
+        StopAllCoroutines();
+        UpdateWeather(0f);
+        currentIntensity = 0f;
+        targetIntensity = 0f;
+    }
+
+    public void ForceStormyWeather()
+    {
+        StopAllCoroutines();
+        UpdateWeather(1f);
+        currentIntensity = 1f;
+        targetIntensity = 1f;
     }
 
     public void UpdateWeatherIntensity(float intensity)
@@ -90,10 +102,10 @@ public class WeatherController : MonoBehaviour
 
     private void UpdateWeather(float intensity)
     {
-        tenkokuModule.weather_RainAmt = Mathf.Lerp(0f, initialRainAmt, intensity);
-        tenkokuModule.weather_FogAmt = Mathf.Lerp(0f, initialFogAmt, intensity);
-        tenkokuModule.weather_lightning = Mathf.Lerp(0f, initialLightningAmt, intensity);
-        tenkokuModule.weather_OvercastAmt = Mathf.Lerp(0f, initialOvercastAmt, intensity);
+        tenkokuModule.weather_RainAmt = Mathf.Lerp(calmRainAmt, stormyRainAmt, intensity);
+        tenkokuModule.weather_FogAmt = Mathf.Lerp(calmFogAmt, stormyFogAmt, intensity);
+        tenkokuModule.weather_lightning = Mathf.Lerp(calmLightningAmt, stormyLightningAmt, intensity);
+        tenkokuModule.weather_OvercastAmt = Mathf.Lerp(calmOvercastAmt, stormyOvercastAmt, intensity);
 
         tenkokuModule.weather_forceUpdate = true;
     }

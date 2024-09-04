@@ -3,28 +3,29 @@ using TMPro;
 
 public class NavigationPrompt : MonoBehaviour
 {
+    [Header("Entity References")]
     public TextMeshProUGUI promptText;
     public Transform playerTransform;
-    public float stormStartDistance = 50f;
-    public float escapeDistance = 100f;
+
+    [Header("Controller References")]
+    public WeatherController weatherController;
+    public SoundController soundController;
+    public OceanAdvanced ocean;
+
+    [Header("Navigation Settings")]
+    public float stormStartDistance = 100f;
+    public float escapeDistance = 20f;
     public float directionThreshold = 0.7f;
 
-    private string[] directions = { "North", "South" };
     private Vector3 targetDirection;
     private Vector3 journeyStartPosition;
     private Vector3 stormStartPosition;
     private bool isInStorm = false;
+    private float distanceTraveled = 0f;
     private float distanceTraveledInCorrectDirection = 0f;
 
-    // Colors for feedback
     private Color defaultColor = Color.white;
     private Color correctDirectionColor = Color.green;
-
-    // Controllers
-    public WeatherController weatherController;
-    public SoundController soundController;
-
-    public OceanAdvanced ocean;
 
     void Start()
     {
@@ -40,17 +41,14 @@ public class NavigationPrompt : MonoBehaviour
 
     void SetupPromptTextPosition()
     {
-        if (promptText != null)
-        {
-            RectTransform rectTransform = promptText.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0, 1);
-            rectTransform.anchorMax = new Vector2(1, 1);
-            rectTransform.pivot = new Vector2(0.5f, 1);
-            rectTransform.anchoredPosition = new Vector2(0, -20);
-            rectTransform.sizeDelta = new Vector2(0, rectTransform.sizeDelta.y);
-            promptText.alignment = TextAlignmentOptions.Top;
-            promptText.enableWordWrapping = true;
-        }
+        RectTransform rectTransform = promptText.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0, 1);
+        rectTransform.anchorMax = new Vector2(1, 1);
+        rectTransform.pivot = new Vector2(0.5f, 1);
+        rectTransform.anchoredPosition = new Vector2(0, -20);
+        rectTransform.sizeDelta = new Vector2(0, rectTransform.sizeDelta.y);
+        promptText.alignment = TextAlignmentOptions.Top;
+        promptText.enableWordWrapping = true;
     }
 
     void Update()
@@ -62,26 +60,37 @@ public class NavigationPrompt : MonoBehaviour
         else
         {
             CheckNavigation();
-            UpdateDirectionFeedback();
-            UpdateWeather();
         }
+        UpdateDirectionFeedback();
     }
 
     void StartJourney()
     {
         journeyStartPosition = playerTransform.position;
-        UpdatePromptText("Enjoy the calm waters!");
+        distanceTraveled = 0f;
+        UpdatePromptText("");
         promptText.color = defaultColor;
-        weatherController.ForceCalmWeather();
-        soundController.SetWeatherState(SoundController.WeatherState.Calm);
+        SetCalmWeather();
     }
 
     void CheckStormStart()
     {
-        if (Vector3.Distance(playerTransform.position, journeyStartPosition) >= stormStartDistance)
+        distanceTraveled = Vector3.Distance(playerTransform.position, journeyStartPosition);
+
+        if (distanceTraveled >= stormStartDistance)
         {
             StartStorm();
         }
+        else if (distanceTraveled >= stormStartDistance * 0.65f)
+        {
+            StormIncoming();
+        }
+    }
+
+    void StormIncoming()
+    {
+        UpdatePromptText("A storm is approaching! Prepare to navigate!");
+        SetStormApproachingWeather();
     }
 
     void StartStorm()
@@ -89,12 +98,8 @@ public class NavigationPrompt : MonoBehaviour
         isInStorm = true;
         stormStartPosition = playerTransform.position;
         distanceTraveledInCorrectDirection = 0f;
-        weatherController.SetStormyWeather();
-        soundController.SetWeatherState(SoundController.WeatherState.Stormy);
-        ocean.SetWaterState(OceanAdvanced.WaterState.Stormy);
-        UpdatePromptText("A storm is approaching!");
+        SetStormyWeather();
         PromptNavigation();
-
     }
 
     void CheckNavigation()
@@ -104,28 +109,31 @@ public class NavigationPrompt : MonoBehaviour
 
         if (dotProduct >= directionThreshold)
         {
-            float movementInCorrectDirection = Vector3.Project(movementVector, targetDirection).magnitude;
-            distanceTraveledInCorrectDirection = movementInCorrectDirection;
+            distanceTraveledInCorrectDirection = movementVector.magnitude;
         }
 
         if (distanceTraveledInCorrectDirection >= escapeDistance)
         {
             EscapeStorm();
         }
+        else
+        {
+            UpdatePromptText($"Navigate {GetDirectionText(targetDirection)} to escape the storm!\n");
+        }
 
-        UpdatePromptText($"Navigate {(targetDirection == Vector3.forward ? "North" : "South")} to escape the storm!\nDistance: {distanceTraveledInCorrectDirection:F1} / {escapeDistance:F1}");
+        UpdateWeather();
     }
 
     void PromptNavigation()
     {
-        targetDirection = (Random.value > 0.5f) ? Vector3.forward : Vector3.back;
-        string directionText = (targetDirection == Vector3.forward) ? "North" : "South";
-        UpdatePromptText($"Navigate {directionText} to escape the storm!");
+        targetDirection = Random.value > 0.5f ? Vector3.forward : Vector3.back;
+        UpdatePromptText($"Storm has started! Navigate {GetDirectionText(targetDirection)} to escape!");
     }
 
     void UpdateDirectionFeedback()
     {
-        float dotProduct = Vector3.Dot(playerTransform.forward, targetDirection);
+        Vector3 playerDirection = new Vector3(playerTransform.forward.x, 0, playerTransform.forward.z).normalized;
+        float dotProduct = Vector3.Dot(playerDirection, targetDirection);
         promptText.color = (dotProduct >= directionThreshold) ? correctDirectionColor : defaultColor;
     }
 
@@ -138,21 +146,40 @@ public class NavigationPrompt : MonoBehaviour
     void EscapeStorm()
     {
         isInStorm = false;
-        UpdatePromptText("You've successfully navigated out of the storm!");
+        UpdatePromptText("You've successfully navigated out of the storm! Enjoy the calm seas.");
         promptText.color = defaultColor;
+        SetCalmWeather();
+        StartJourney(); // Reset for the next storm
+    }
+
+    void SetCalmWeather()
+    {
         weatherController.SetCalmWeather();
         soundController.SetWeatherState(SoundController.WeatherState.Calm);
+        ocean.SetWaterState(OceanAdvanced.WaterState.Calm);
+    }
 
-        // Reset for the next potential storm
-        journeyStartPosition = playerTransform.position;
+    void SetStormApproachingWeather()
+    {
+        weatherController.SetStormApproachingWeather();
+        soundController.SetWeatherState(SoundController.WeatherState.Stormy);
+        ocean.SetWaterState(OceanAdvanced.WaterState.Choppy);
+    }
+
+    void SetStormyWeather()
+    {
+        weatherController.SetStormyWeather();
+        ocean.SetWaterState(OceanAdvanced.WaterState.Stormy);
     }
 
     void UpdatePromptText(string newText)
     {
-        if (promptText != null)
-        {
-            promptText.text = newText;
-            promptText.ForceMeshUpdate();
-        }
+        promptText.text = newText;
+        promptText.ForceMeshUpdate();
+    }
+
+    string GetDirectionText(Vector3 direction)
+    {
+        return direction == Vector3.forward ? "North" : "South";
     }
 }

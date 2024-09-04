@@ -122,104 +122,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &245359987
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 245359989}
-  - component: {fileID: 245359988}
-  m_Layer: 0
-  m_Name: OceanAdvanced
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &245359988
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 245359987}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ba5eef4493f04143b61cd5157c9aede, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ocean: {fileID: 2100000, guid: be1672567266e5f40a8a109aace4fdd4, type: 2}
-  sun: {fileID: 1150276526}
-  calmWaves:
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  stormyWaves:
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
-  - waveLength: 0
-    speed: 0
-    amplitude: 0
-    sharpness: 0
-    direction: {x: 0, y: 0}
---- !u!4 &245359989
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 245359987}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 405243208}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &250573650
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1119,58 +1021,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 34d71198bd59f3a4db26f79e7ef0ff91, type: 3}
---- !u!1 &405243206
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 405243208}
-  - component: {fileID: 405243207}
-  m_Layer: 0
-  m_Name: OceanController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &405243207
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 405243206}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45650e3669cbe574ca61406ac8eaea5b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  oceanAdvanced: {fileID: 245359988}
-  waterTiler: {fileID: 538073153}
-  playerTransform: {fileID: 1842720425}
-  calmWaveHeight: 0.1
-  stormyWaveHeight: 0.5
-  transitionDuration: 5
---- !u!4 &405243208
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 405243206}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1208.8895, y: -536.7839, z: 589.0001}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 245359989}
-  m_Father: {fileID: 1208372134}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!84 &438370742
+--- !u!84 &357071449
 RenderTexture:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1238,7 +1089,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   promptText: {fileID: 254118712}
-  directionThreshold: 0.85
+  playerTransform: {fileID: 1842720425}
+  stormStartDistance: 5
+  escapeDistance: 2
+  directionThreshold: 0.8
+  weatherController: {fileID: 1291224263}
+  soundController: {fileID: 1885730395}
+  ocean: {fileID: 1805739447}
 --- !u!4 &488341099
 Transform:
   m_ObjectHideFlags: 0
@@ -1248,11 +1105,11 @@ Transform:
   m_GameObject: {fileID: 488341097}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1209, y: -537.7239, z: 588.8896}
+  m_LocalPosition: {x: 0, y: 3.8134766, z: -0.11053467}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1208372134}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &538073152
 GameObject:
@@ -1284,8 +1141,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waterTilePrefab: {fileID: 138394, guid: af2652a630f9e464895d954b8ce854bd, type: 3}
-  playerTransform: {fileID: 1842720425}
-  tileSize: 100
+  boatTransform: {fileID: 1842720425}
+  oceanAdvanced: {fileID: 1805739447}
 --- !u!4 &538073154
 Transform:
   m_ObjectHideFlags: 0
@@ -1295,11 +1152,11 @@ Transform:
   m_GameObject: {fileID: 538073152}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1203.522, y: -535.0827, z: 607.2214}
+  m_LocalPosition: {x: -5.4780273, y: 6.454651, z: 18.221252}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1208372134}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &599905270
 GameObject:
@@ -1615,61 +1472,6 @@ Light:
   m_CorrespondingSourceObject: {fileID: 704595406801895788, guid: 34d71198bd59f3a4db26f79e7ef0ff91, type: 3}
   m_PrefabInstance: {fileID: 320982066}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1208372132
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1208372134}
-  - component: {fileID: 1208372133}
-  m_Layer: 0
-  m_Name: GameStateManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1208372133
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1208372132}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 712b2b51be6870b4eb47d503928e71e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  stormStartDistance: 5
-  escapeDistance: 3
-  weatherController: {fileID: 1291224263}
-  soundController: {fileID: 1885730395}
-  oceanController: {fileID: 405243207}
-  playerTransform: {fileID: 1842720425}
---- !u!4 &1208372134
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1208372132}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1209, y: 541.53735, z: -589.0001}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1885730394}
-  - {fileID: 405243208}
-  - {fileID: 1291224264}
-  - {fileID: 488341099}
-  - {fileID: 538073154}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1291224262
 GameObject:
   m_ObjectHideFlags: 0
@@ -1710,12 +1512,50 @@ Transform:
   m_GameObject: {fileID: 1291224262}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1057.6582, y: -656.80963, z: 559.6571}
+  m_LocalPosition: {x: -151.3418, y: -115.27228, z: -29.343018}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1208372134}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!84 &1684716582
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 5
+  m_Width: 128
+  m_Height: 128
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthStencilFormat: 94
+  m_ColorFormat: 48
+  m_MipMap: 1
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_EnableRandomWrite: 0
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_Dimension: 2
+  m_VolumeDepth: 1
+  m_ShadowSamplingMode: 2
 --- !u!1 &1689889309
 GameObject:
   m_ObjectHideFlags: 0
@@ -1843,6 +1683,58 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1885730394}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1805739446
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1805739448}
+  - component: {fileID: 1805739447}
+  m_Layer: 0
+  m_Name: OceanAdvanced
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1805739447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1805739446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ba5eef4493f04143b61cd5157c9aede, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ocean: {fileID: 2100000, guid: be1672567266e5f40a8a109aace4fdd4, type: 2}
+  sun: {fileID: 1150276526}
+  calmMaxAmplitude: 0.5
+  calmMaxSpeed: 2
+  calmMaxSharpness: 0.5
+  stormyMaxAmplitude: 3
+  stormyMaxSpeed: 4
+  stormyMaxSharpness: 1
+--- !u!4 &1805739448
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1805739446}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -32.739067, y: 3.6844249, z: -28.056393}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1842720417 stripped
 GameObject:
@@ -1980,13 +1872,13 @@ Transform:
   m_GameObject: {fileID: 1885730392}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1057.6582, y: -656.80963, z: 559.6571}
+  m_LocalPosition: {x: -151.3418, y: -115.27228, z: -29.343018}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 610727394}
   - {fileID: 1689889311}
-  m_Father: {fileID: 1208372134}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1885730395
 MonoBehaviour:
@@ -2005,44 +1897,6 @@ MonoBehaviour:
   transitionDelay: 7
   transitionDuration: 0.5
   blendOverlap: 0.05
---- !u!84 &1935798958
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 5
-  m_Width: 128
-  m_Height: 128
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthStencilFormat: 94
-  m_ColorFormat: 48
-  m_MipMap: 1
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_EnableRandomWrite: 0
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_Dimension: 2
-  m_VolumeDepth: 1
-  m_ShadowSamplingMode: 2
 --- !u!1 &1994718964
 GameObject:
   m_ObjectHideFlags: 0
@@ -2113,7 +1967,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 26.991467
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -2194,4 +2048,8 @@ SceneRoots:
   - {fileID: 320982066}
   - {fileID: 1067062687}
   - {fileID: 599905273}
-  - {fileID: 1208372134}
+  - {fileID: 1885730394}
+  - {fileID: 1291224264}
+  - {fileID: 488341099}
+  - {fileID: 538073154}
+  - {fileID: 1805739448}
