@@ -3,14 +3,13 @@ using System.Collections.Generic;
 
 public class WaterTiler : MonoBehaviour
 {
-    public GameObject waterTilePrefab; // Reference to the water tile prefab
-    public Transform boatTransform; // Reference to the player's transform
-    public float tileSize = 100f; // Size of each tile (ensure this matches your plane's scale)
-    public OceanAdvanced oceanAdvanced; // Reference to the OceanAdvanced script
+    public GameObject waterTilePrefab;
+    public Transform boatTransform;
+    public OceanAdvanced oceanAdvanced;
 
-    private Vector3 startPosition;
-    private Queue<GameObject> tilePool = new Queue<GameObject>();
-    private HashSet<Vector3> activeTiles = new HashSet<Vector3>();
+    private Vector2Int currentGridPosition;
+    private Dictionary<Vector2Int, GameObject> tiles = new Dictionary<Vector2Int, GameObject>();
+    private float tileSize;
 
     void Start()
     {
@@ -20,144 +19,144 @@ public class WaterTiler : MonoBehaviour
             return;
         }
 
-        startPosition = boatTransform.position;
-        InitializeTilePool();
+        CalculateTileSize();
+        currentGridPosition = WorldToGridPosition(boatTransform.position);
         CreateInitialTiles();
+    }
+
+    void CalculateTileSize()
+    {
+        Renderer prefabRenderer = waterTilePrefab.GetComponent<Renderer>();
+        if (prefabRenderer != null)
+        {
+            tileSize = prefabRenderer.bounds.size.x;
+            Debug.Log($"Calculated tile size: {tileSize}");
+        }
+        else
+        {
+            Debug.LogError("Water tile prefab is missing a Renderer component!");
+            tileSize = 100f; // Fallback size
+        }
     }
 
     void Update()
     {
-        UpdateTiles();
-    }
-
-    void InitializeTilePool()
-    {
-        for (int i = 0; i < 4; i++) // 2x2 grid requires 4 tiles
+        Vector2Int newGridPosition = WorldToGridPosition(boatTransform.position);
+        if (newGridPosition != currentGridPosition)
         {
-            GameObject tile = Instantiate(waterTilePrefab);
-            tile.SetActive(false);
-            tilePool.Enqueue(tile);
+            UpdateTilePositions(newGridPosition);
+            currentGridPosition = newGridPosition;
         }
+
+        // Update ocean position
+        oceanAdvanced.transform.position = new Vector3(boatTransform.position.x, oceanAdvanced.transform.position.y, boatTransform.position.z);
     }
 
     void CreateInitialTiles()
     {
-        for (int x = -1; x <= 0; x++) // Adjusted for 2x2 grid
+        for (int x = -1; x <= 1; x++)
         {
-            for (int z = -1; z <= 0; z++)
+            for (int z = -1; z <= 1; z++)
             {
-                Vector3 position = new Vector3(
-                    startPosition.x + x * tileSize,
-                    startPosition.y,
-                    startPosition.z + z * tileSize);
-
-                ActivateTile(position);
+                Vector2Int gridPos = new Vector2Int(x, z);
+                CreateTileAt(currentGridPosition + gridPos);
             }
         }
     }
 
-    void UpdateTiles()
+    void UpdateTilePositions(Vector2Int newCenterGridPos)
     {
-        Vector3 playerPosition = boatTransform.position;
-        Vector3 offset = playerPosition - startPosition;
+        HashSet<Vector2Int> newPositions = new HashSet<Vector2Int>();
+        HashSet<Vector2Int> oldPositions = new HashSet<Vector2Int>(tiles.Keys);
 
-        if (Mathf.Abs(offset.x) >= tileSize || Mathf.Abs(offset.z) >= tileSize)
+        for (int x = -1; x <= 1; x++)
         {
-            Vector3 moveDirection = new Vector3(
-                Mathf.Round(offset.x / tileSize) * tileSize,
-                0,
-                Mathf.Round(offset.z / tileSize) * tileSize);
-
-            startPosition += moveDirection;
-            MoveTiles(moveDirection);
-        }
-
-        // Update the ocean's position to follow the boat
-        oceanAdvanced.transform.position = new Vector3(playerPosition.x, oceanAdvanced.transform.position.y, playerPosition.z);
-    }
-
-    void MoveTiles(Vector3 moveDirection)
-    {
-        List<Vector3> newTiles = new List<Vector3>();
-
-        foreach (Vector3 position in activeTiles)
-        {
-            Vector3 newPosition = position - moveDirection;
-            if (Vector3.Distance(boatTransform.position, newPosition) <= tileSize * Mathf.Sqrt(2))
+            for (int z = -1; z <= 1; z++)
             {
-                newTiles.Add(newPosition);
-            }
-            else
-            {
-                DeactivateTile(position);
+                Vector2Int gridPos = newCenterGridPos + new Vector2Int(x, z);
+                newPositions.Add(gridPos);
+
+                if (!tiles.ContainsKey(gridPos))
+                {
+                    // If there's no tile at this position, move an old tile here
+                    Vector2Int oldPos = FindFurthestTile(newCenterGridPos, oldPositions);
+                    if (oldPos != gridPos)
+                    {
+                        MoveTile(oldPos, gridPos);
+                        oldPositions.Remove(oldPos);
+                    }
+                }
             }
         }
 
-        foreach (Vector3 position in newTiles)
-        {
-            ActivateTile(position);
-        }
+        // Ensure we always have exactly 9 tiles
+        Debug.Assert(tiles.Count == 9, "There should always be exactly 9 tiles.");
     }
 
-    void ActivateTile(Vector3 position)
+    Vector2Int FindFurthestTile(Vector2Int center, HashSet<Vector2Int> availablePositions)
     {
-        if (!activeTiles.Contains(position))
-        {
-            GameObject tile = GetPooledTile();
-            tile.transform.position = position;
-            tile.SetActive(true);
-            activeTiles.Add(position);
+        Vector2Int furthest = center;
+        float maxDistanceSq = float.MinValue;
 
-            // Apply ocean material and properties to the new tile
-            ApplyOceanToTile(tile);
+        foreach (Vector2Int pos in availablePositions)
+        {
+            float distanceSq = (pos - center).sqrMagnitude;
+            if (distanceSq > maxDistanceSq)
+            {
+                maxDistanceSq = distanceSq;
+                furthest = pos;
+            }
         }
+
+        return furthest;
     }
 
-    void DeactivateTile(Vector3 position)
+
+    void CreateTileAt(Vector2Int gridPos)
     {
-        if (activeTiles.Contains(position))
-        {
-            GameObject tile = GetTileAtPosition(position);
-            tile.SetActive(false);
-            activeTiles.Remove(position);
-            tilePool.Enqueue(tile);
-        }
+        Vector3 worldPos = GridToWorldPosition(gridPos);
+        GameObject tile = Instantiate(waterTilePrefab, worldPos, Quaternion.identity, transform);
+        ApplyOceanToTile(tile);
+        tiles[gridPos] = tile;
     }
 
-    GameObject GetPooledTile()
+    void MoveTile(Vector2Int oldGridPos, Vector2Int newGridPos)
     {
-        if (tilePool.Count > 0)
+        if (tiles.TryGetValue(oldGridPos, out GameObject tile))
         {
-            return tilePool.Dequeue();
+            tile.transform.position = GridToWorldPosition(newGridPos);
+            tiles.Remove(oldGridPos);
+            tiles[newGridPos] = tile;
         }
         else
         {
-            return Instantiate(waterTilePrefab);
+            Debug.LogError($"Tried to move non-existent tile from {oldGridPos} to {newGridPos}");
         }
-    }
-
-    GameObject GetTileAtPosition(Vector3 position)
-    {
-        foreach (Transform child in transform)
-        {
-            if (Vector3.Distance(child.position, position) < 0.1f)
-            {
-                return child.gameObject;
-            }
-        }
-        return null;
     }
 
     void ApplyOceanToTile(GameObject tile)
     {
-        // Apply the ocean material to the tile
         Renderer tileRenderer = tile.GetComponent<Renderer>();
         if (tileRenderer != null && oceanAdvanced.ocean != null)
         {
             tileRenderer.material = oceanAdvanced.ocean;
         }
+    }
 
-        // You might need to add additional components or scripts to the tile
-        // to make it work with the OceanAdvanced system
+    Vector2Int WorldToGridPosition(Vector3 worldPos)
+    {
+        return new Vector2Int(
+            Mathf.RoundToInt(worldPos.x / tileSize),
+            Mathf.RoundToInt(worldPos.z / tileSize)
+        );
+    }
+
+    Vector3 GridToWorldPosition(Vector2Int gridPos)
+    {
+        return new Vector3(
+            gridPos.x * tileSize,
+            0,
+            gridPos.y * tileSize
+        );
     }
 }
