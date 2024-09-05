@@ -16,14 +16,18 @@ public class GameStateManager : MonoBehaviour
     [SerializeField] private float escapeDistance = 20f;
     [SerializeField] private float directionThreshold = 0.7f;
     [SerializeField] private float hintTriggerDistance = 10f;
+    [SerializeField] private float correctDistanceThreshold = 5f;
 
     private Vector3 targetDirection;
     private Vector3 journeyStartPosition;
     private Vector3 stormStartPosition;
+    private Vector3 lastPosition;
     private bool isInStorm = false;
+    private bool isStormApproaching = false;
     private float distanceTraveled = 0f;
     private float distanceTraveledInCorrectDirection = 0f;
     private float cumulativeWrongDirectionDistance = 0f;
+    private float tempCorrectDirectionDistance = 0f;
 
     private void Start()
     {
@@ -42,6 +46,7 @@ public class GameStateManager : MonoBehaviour
             CheckNavigation();
         }
         UpdateDirectionFeedback();
+        lastPosition = playerTransform.position;
     }
 
     private void ValidateReferences()
@@ -57,20 +62,23 @@ public class GameStateManager : MonoBehaviour
     private void StartJourney()
     {
         journeyStartPosition = playerTransform.position;
+        lastPosition = journeyStartPosition;
         ResetNavigationValues();
         promptController.ClearPrompt();
         SetWeatherState(WeatherState.Calm);
+        Debug.Log("Journey started. Weather set to Calm.");
     }
 
     private void CheckStormStart()
     {
         distanceTraveled = Vector3.Distance(playerTransform.position, journeyStartPosition);
+        Debug.Log($"Distance traveled: {distanceTraveled}");
 
         if (distanceTraveled >= stormStartDistance)
         {
             StartStorm();
         }
-        else if (distanceTraveled >= stormStartDistance * 0.65f)
+        else if (!isStormApproaching && distanceTraveled >= stormStartDistance * 0.5f)
         {
             StormIncoming();
         }
@@ -78,22 +86,26 @@ public class GameStateManager : MonoBehaviour
 
     private void StormIncoming()
     {
+        isStormApproaching = true;
         promptController.StormApproachingPrompt();
         SetWeatherState(WeatherState.StormApproaching);
+        Debug.Log("Storm approaching. Weather set to Choppy.");
     }
 
     private void StartStorm()
     {
         isInStorm = true;
+        isStormApproaching = false;
         stormStartPosition = playerTransform.position;
         ResetNavigationValues();
         SetWeatherState(WeatherState.Stormy);
         PromptNavigation();
+        Debug.Log("Storm started. Weather set to Stormy.");
     }
 
     private void CheckNavigation()
     {
-        Vector3 movementVector = playerTransform.position - stormStartPosition;
+        Vector3 movementVector = playerTransform.position - lastPosition;
         float dotProduct = Vector3.Dot(movementVector.normalized, targetDirection);
 
         UpdateNavigationDistances(movementVector, dotProduct);
@@ -112,21 +124,26 @@ public class GameStateManager : MonoBehaviour
 
     private void UpdateNavigationDistances(Vector3 movementVector, float dotProduct)
     {
+        float distanceMoved = movementVector.magnitude;
+
         if (dotProduct >= directionThreshold)
         {
-            float newDistanceInCorrectDirection = movementVector.magnitude;
-            distanceTraveledInCorrectDirection = Mathf.Max(distanceTraveledInCorrectDirection, newDistanceInCorrectDirection);
-            cumulativeWrongDirectionDistance = 0f;
+            distanceTraveledInCorrectDirection += distanceMoved;
+            tempCorrectDirectionDistance += distanceMoved;
+
+            if (tempCorrectDirectionDistance >= correctDistanceThreshold)
+            {
+                cumulativeWrongDirectionDistance = 0f;
+                tempCorrectDirectionDistance = 0f;
+            }
         }
         else
         {
-            cumulativeWrongDirectionDistance += CalculateWrongDirectionDistance();
+            cumulativeWrongDirectionDistance += distanceMoved;
+            tempCorrectDirectionDistance = 0f;
         }
-    }
 
-    private float CalculateWrongDirectionDistance()
-    {
-        return Vector3.ProjectOnPlane(playerTransform.GetComponent<Rigidbody>().velocity, targetDirection).magnitude * Time.deltaTime;
+        Debug.Log($"Correct direction distance: {distanceTraveledInCorrectDirection}, Wrong direction distance: {cumulativeWrongDirectionDistance}");
     }
 
     private void UpdateNavigationPrompt()
@@ -134,7 +151,8 @@ public class GameStateManager : MonoBehaviour
         string direction = GetDirectionText(targetDirection);
         if (cumulativeWrongDirectionDistance >= hintTriggerDistance)
         {
-            promptController.DirectionWithHintPrompt(direction);
+            promptController.DisplayHint();
+            Debug.Log("Hint displayed due to wrong direction travel.");
         }
         else
         {
@@ -146,6 +164,7 @@ public class GameStateManager : MonoBehaviour
     {
         targetDirection = Random.value > 0.5f ? Vector3.forward : Vector3.back;
         promptController.DirectionPrompt(GetDirectionText(targetDirection));
+        Debug.Log($"New navigation direction: {GetDirectionText(targetDirection)}");
     }
 
     private void UpdateDirectionFeedback()
@@ -159,6 +178,7 @@ public class GameStateManager : MonoBehaviour
     {
         float weatherIntensity = Mathf.Clamp01(1f - (distanceTraveledInCorrectDirection / escapeDistance));
         weatherController.UpdateWeatherIntensity(weatherIntensity);
+        Debug.Log($"Weather intensity updated: {weatherIntensity}");
     }
 
     private void EscapeStorm()
@@ -167,6 +187,7 @@ public class GameStateManager : MonoBehaviour
         promptController.SuccessfulNavigationPrompt();
         SetWeatherState(WeatherState.Calm);
         StartJourney(); // Reset for the next storm
+        Debug.Log("Storm escaped. Weather set to Calm. New journey started.");
     }
 
     private void SetWeatherState(WeatherState state)
@@ -188,6 +209,7 @@ public class GameStateManager : MonoBehaviour
                 ocean.SetWaterState(OceanAdvanced.WaterState.Stormy);
                 break;
         }
+        Debug.Log($"Weather state set to: {state}");
     }
 
     private string GetDirectionText(Vector3 direction)
@@ -200,6 +222,8 @@ public class GameStateManager : MonoBehaviour
         distanceTraveled = 0f;
         distanceTraveledInCorrectDirection = 0f;
         cumulativeWrongDirectionDistance = 0f;
+        tempCorrectDirectionDistance = 0f;
+        Debug.Log("Navigation values reset.");
     }
 
     private enum WeatherState

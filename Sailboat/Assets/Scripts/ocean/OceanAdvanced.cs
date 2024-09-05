@@ -54,7 +54,7 @@ public class OceanAdvanced : MonoBehaviour
         new Wave(10, 1.0f, 0.01f, 0.5f, new Vector2(-1.0f, 1.2f))
     };
 
-  static Wave[] chopppyWaves = {
+  static Wave[] choppyWaves = {
         new Wave(99, 0.8f, 0.3f, 0.5f, new Vector2(1.0f, 0.2f)),
         new Wave(60, 1.2f, 0.2f, 0.3f, new Vector2(1.0f, 3.0f)),
         new Wave(20, 1.5f, 0.1f, 0.4f, new Vector2(2.0f, 4.0f)),
@@ -85,7 +85,7 @@ public class OceanAdvanced : MonoBehaviour
   private float transitionProgress = 1f;
 
   [SerializeField]
-  public const float transitionDuration = 10f; // Duration of transition in seconds
+  private float transitionDuration = 10f; // Duration of transition in seconds
 
   void Awake()
   {
@@ -150,13 +150,27 @@ public class OceanAdvanced : MonoBehaviour
 
   private void UpdateWaveArrays()
   {
+    Wave[] startWaves = GetWavesForState(currentState);
+    Wave[] endWaves = GetWavesForState(targetState);
+
     for (int i = 0; i < NB_WAVE; i++)
     {
-      activeWaves[i] = Wave.Lerp(
-          currentState == WaterState.Calm ? calmWaves[i] : stormyWaves[i],
-          targetState == WaterState.Calm ? calmWaves[i] : stormyWaves[i],
-          transitionProgress
-      );
+      activeWaves[i] = Wave.Lerp(startWaves[i], endWaves[i], transitionProgress);
+    }
+  }
+
+  private Wave[] GetWavesForState(WaterState state)
+  {
+    switch (state)
+    {
+      case WaterState.Calm:
+        return calmWaves;
+      case WaterState.Choppy:
+        return choppyWaves;
+      case WaterState.Stormy:
+        return stormyWaves;
+      default:
+        return calmWaves;
     }
   }
 

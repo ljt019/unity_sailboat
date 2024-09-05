@@ -7,13 +7,32 @@ public class PromptController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI promptText;
 
     [Header("Prompt Color Settings")]
-    [SerializeField] private readonly Color defaultColor = Color.white;
-    [SerializeField] private readonly Color correctDirectionColor = Color.green;
+    [SerializeField] private Color defaultColor = Color.white;
+    [SerializeField] private Color correctDirectionColor = Color.green;
+
+    [Header("Hint Settings")]
+    [SerializeField] private float hintDisplayDuration = 5f;
+
+    private string currentDirection;
+    private bool isHintDisplayed;
+    private float hintDisplayTimer;
 
     private void Start()
     {
         ValidateReferences();
         SetupPromptTextPosition();
+    }
+
+    private void Update()
+    {
+        if (isHintDisplayed)
+        {
+            hintDisplayTimer -= Time.deltaTime;
+            if (hintDisplayTimer <= 0)
+            {
+                HideHint();
+            }
+        }
     }
 
     private void ValidateReferences()
@@ -52,6 +71,8 @@ public class PromptController : MonoBehaviour
     {
         UpdatePromptText(string.Empty);
         SetDefaultColor();
+        isHintDisplayed = false;
+        hintDisplayTimer = 0f;
     }
 
     public void SetDefaultColor()
@@ -62,13 +83,26 @@ public class PromptController : MonoBehaviour
     // Prompt Presets
     public void DirectionPrompt(string direction)
     {
+        currentDirection = direction;
         UpdatePromptText($"Navigate {direction} to escape the storm!");
+        isHintDisplayed = false;
     }
 
-    public void DirectionWithHintPrompt(string direction)
+    public void DisplayHint()
     {
-        string hintText = direction == "North" ? "How can you find Polaris?" : "Where does Orion's sword point?";
-        UpdatePromptText($"Navigate {direction} to escape the storm!\nHint: {hintText}");
+        if (!isHintDisplayed)
+        {
+            string hintText = currentDirection == "North" ? "How can you find Polaris?" : "Where does Orion's sword point?";
+            UpdatePromptText($"Navigate {currentDirection} to escape the storm!\nHint: {hintText}");
+            isHintDisplayed = true;
+            hintDisplayTimer = hintDisplayDuration;
+        }
+    }
+
+    private void HideHint()
+    {
+        UpdatePromptText($"Navigate {currentDirection} to escape the storm!");
+        isHintDisplayed = false;
     }
 
     public void StormApproachingPrompt()
