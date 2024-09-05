@@ -4,21 +4,23 @@ using System.Collections;
 
 public class WeatherController : MonoBehaviour
 {
+    [Header("Entity References")]
     public TenkokuModule tenkokuModule;
 
     [Header("Calm Weather Settings")]
-    public float calmRainAmt = 0f;
-    public float calmFogAmt = 0f;
-    public float calmLightningAmt = 0f;
-    public float calmOvercastAmt = 0f;
+    [SerializeField] public float calmRainAmt = 0f;
+    [SerializeField] public float calmFogAmt = 0f;
+    [SerializeField] public float calmLightningAmt = 0f;
+    [SerializeField] public float calmOvercastAmt = 0f;
 
     [Header("Stormy Weather Settings")]
-    public float stormyRainAmt = 1.0f;
-    public float stormyFogAmt = 0.147f;
-    public float stormyLightningAmt = 0.543f;
-    public float stormyOvercastAmt = 0.104f;
+    [SerializeField] public float stormyRainAmt = 1.0f;
+    [SerializeField] public float stormyFogAmt = 0.147f;
+    [SerializeField] public float stormyLightningAmt = 0.543f;
+    [SerializeField] public float stormyOvercastAmt = 0.104f;
 
-    public float transitionSpeed = 0.5f;
+    [Header("Misc")]
+    [SerializeField] public float transitionSpeed = 0.5f;
 
     private float currentIntensity = 0f;
     private float targetIntensity = 0f;

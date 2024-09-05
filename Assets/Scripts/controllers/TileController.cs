@@ -1,11 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class WaterTiler : MonoBehaviour
+public class TileController : MonoBehaviour
 {
-    public GameObject waterTilePrefab;
-    public Transform boatTransform;
-    public OceanAdvanced oceanAdvanced;
+    [Header("Entity References")]
+    [SerializeField] public GameObject waterTilePrefab;
+    [SerializeField] public Transform boatTransform;
+    [SerializeField] public OceanAdvanced oceanAdvanced;
 
     private Vector2Int currentGridPosition;
     private Dictionary<Vector2Int, GameObject> tiles = new Dictionary<Vector2Int, GameObject>();

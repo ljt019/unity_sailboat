@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Collider))]
@@ -32,12 +32,12 @@ public class GameEntity : MonoBehaviour
     {
         float mass = 0F;
         Rigidbody rb = t.GetComponent<Rigidbody>();
-        if(rb != null)
+        if (rb != null)
             mass += rb.mass;
-        for(int i = 0 ; i < t.childCount ; i++)
+        for (int i = 0; i < t.childCount; i++)
             mass += GetTotalMass(t.GetChild(i));
         return mass;
-        
+
     }
 
 
@@ -54,7 +54,7 @@ public class GameEntity : MonoBehaviour
         absSpeed = speed.x < 0F ? -speed.x : speed.x
                  + speed.y < 0F ? -speed.y : speed.y
                  + speed.z < 0F ? -speed.z : speed.z;
-        if(absSpeed < 0)
+        if (absSpeed < 0)
             absSpeed = -absSpeed;
         sqrtSpeed = Mathf.Sqrt(absSpeed);
     }
@@ -62,7 +62,7 @@ public class GameEntity : MonoBehaviour
 #if UNITY_EDITOR
     protected virtual void OnDrawGizmos()
     {
-        if(rb == null)
+        if (rb == null)
             return;
         Gizmos.color = Color.black;
         Gizmos.DrawWireSphere(rb.worldCenterOfMass, 0.25F);

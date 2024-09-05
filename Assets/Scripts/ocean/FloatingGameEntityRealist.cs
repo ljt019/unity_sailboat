@@ -6,22 +6,28 @@ using ArchimedsLab;
 [RequireComponent(typeof(MeshFilter))]
 public class FloatingGameEntityRealist : GameEntity
 {
-  public Mesh simplifiedBuoyancyMesh;
+  [Header("Simplified Mesh Reference")]
+  [SerializeField] public Mesh simplifiedBuoyancyMesh;
 
   [SerializeField] private Vector3 meshOffset = new Vector3(0f, 0f, 0.5f);
+
+  [Header("Water Sampling Settings")]
+  [SerializeField] private int waterSampleCount = 5;
+  [SerializeField] private float waterSampleRadius = 0.5f;
+
+  [Header("Stabilization Settings")]
+  [SerializeField] private float stabilizationTorque = 1f;
+  [SerializeField] private float angularVelocitySmoothing = 0.1f;
+
+  [Header("Additional Damping Settings")]
+  [SerializeField] private float additionalAngularDamping = 0.5f;
+  [SerializeField] private float additionalLinearDamping = 0.1f;
 
   private tri[] _triangles;
   private tri[] worldBuffer;
   private tri[] wetTris;
   private tri[] dryTris;
   private uint nbrWet, nbrDry;
-
-  [SerializeField] private float additionalAngularDamping = 0.5f;
-  [SerializeField] private float additionalLinearDamping = 0.1f;
-  [SerializeField] private int waterSampleCount = 5;
-  [SerializeField] private float waterSampleRadius = 0.5f;
-  [SerializeField] private float stabilizationTorque = 1f;
-  [SerializeField] private float angularVelocitySmoothing = 0.1f;
 
   private Vector3 smoothedAngularVelocity;
 

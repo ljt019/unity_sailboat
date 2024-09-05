@@ -2,13 +2,18 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(FloatingGameEntityRealist))]
-public class Controller : MonoBehaviour
+public class BoatController : MonoBehaviour
 {
+    [Header("Force Settings")]
     [SerializeField] private float motorForce = 2000f;
     [SerializeField] private float turnForce = 1000f;
-    [SerializeField] private float turningResponseTime = 0.1f;
+
+    [Header("Drag Settings")]
     [SerializeField] private float forwardDrag = 0.1f;
     [SerializeField] private float sidewaysDrag = 2f;
+
+    [Header("Misc")]
+    [SerializeField] private float turningResponseTime = 0.1f;
 
     private Rigidbody rb;
     private FloatingGameEntityRealist floatingEntity;

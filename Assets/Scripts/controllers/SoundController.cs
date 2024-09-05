@@ -4,8 +4,8 @@ using System.Collections;
 public class SoundController : MonoBehaviour
 {
     [Header("Audio Source References")]
-    public AudioSource calmAmbientSound;
-    public AudioSource stormyAmbientSound;
+    [SerializeField] public AudioSource calmAmbientSound;
+    [SerializeField] public AudioSource stormyAmbientSound;
 
     public enum WeatherState
     {
