@@ -12,7 +12,9 @@ UDP_IP = "192.168.1.42"
 UDP_PORT = 3030
 
 # Pin configurations
-LED_PIN = 16
+RIGHT_LED_PIN = 14
+DEADZONE_LED_PIN = 13
+LEFT_LED_PIN = 11
 ADC_PIN = 26
 
 # Deadzone settings
@@ -33,24 +35,32 @@ def connect_wifi():
 
 def setup_hardware():
     adc = ADC(Pin(ADC_PIN))
-    pwm = PWM(Pin(LED_PIN))
-    pwm.freq(1000)  # Set PWM frequency to 1kHz
-    return adc, pwm
+    right_pwm = PWM(Pin(RIGHT_LED_PIN))
+    deadzone_pwm = PWM(Pin(DEADZONE_LED_PIN))
+    left_pwm = PWM(Pin(LEFT_LED_PIN))
+    
+    right_pwm.freq(1000)
+    deadzone_pwm.freq(1000)
+    left_pwm.freq(1000)
+    
+    return adc, right_pwm, deadzone_pwm, left_pwm
 
 def map_value(x, in_min, in_max, out_min, out_max):
     return int((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
 def calculate_led_brightness(adc_value):
     if DEADZONE_MIN <= adc_value <= DEADZONE_MAX:
-        return 0
+        return 0, 5000, 0  # Right off, Deadzone full, Left off
     elif adc_value < DEADZONE_MIN:
-        return map_value(adc_value, 0, DEADZONE_MIN, 65535, 0)
+        left_brightness = map_value(adc_value, 0, DEADZONE_MIN, 65535, 0)
+        return 0, 0, left_brightness  # Right off, Deadzone off, Left variable
     else:
-        return map_value(adc_value, DEADZONE_MAX, 65535, 0, 65535)
+        right_brightness = map_value(adc_value, DEADZONE_MAX, 65535, 0, 65535)
+        return right_brightness, 0, 0  # Right variable, Deadzone off, Left off
 
 def main():
     wlan = connect_wifi()
-    adc, pwm = setup_hardware()
+    adc, right_pwm, deadzone_pwm, left_pwm = setup_hardware()
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
@@ -64,15 +74,17 @@ def main():
             adc_value = adc.read_u16()
             
             # Calculate LED brightness based on ADC value
-            led_brightness = calculate_led_brightness(adc_value)
+            right_brightness, deadzone_brightness, left_brightness = calculate_led_brightness(adc_value)
             
-            # Set PWM duty cycle for LED
-            pwm.duty_u16(led_brightness)
+            # Set PWM duty cycle for LEDs
+            right_pwm.duty_u16(right_brightness)
+            deadzone_pwm.duty_u16(deadzone_brightness)
+            left_pwm.duty_u16(left_brightness)
             
             # Send ADC value over UDP
             try:
                 sock.sendto(adc_value.to_bytes(2, 'little'), (UDP_IP, UDP_PORT))
-                print(f"Sent ADC value: {adc_value}, LED brightness: {led_brightness}")
+                print(f"Sent ADC value: {adc_value}, Right: {right_brightness}, Deadzone: {deadzone_brightness}, Left: {left_brightness}")
             except Exception as e:
                 print(f"Failed to send UDP packet: {e}")
             

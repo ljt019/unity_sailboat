@@ -132,6 +132,26 @@ public class OceanAdvanced : MonoBehaviour
     }
   }
 
+  public WaterState GetWaterState()
+  {
+    return currentState;
+  }
+
+  public void setCalmWater()
+  {
+    SetWaterState(WaterState.Calm);
+  }
+
+  public void setChoppyWater()
+  {
+    SetWaterState(WaterState.Choppy);
+  }
+
+  public void setStormyWater()
+  {
+    SetWaterState(WaterState.Stormy);
+  }
+
   private IEnumerator TransitionWaterState()
   {
     transitionProgress = 0f;

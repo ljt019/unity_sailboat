@@ -7,13 +7,13 @@ public class SoundController : MonoBehaviour
     [SerializeField] public AudioSource calmAmbientSound;
     [SerializeField] public AudioSource stormyAmbientSound;
 
-    public enum WeatherState
+    public enum SoundState
     {
         Calm,
         Stormy
     }
 
-    private WeatherState currentWeatherState = WeatherState.Calm;
+    private SoundState currentSoundState = SoundState.Calm;
 
     [Header("Transition Settings")]
     [SerializeField] private float transitionDelay = 2.0f; // Delay before starting the transition
@@ -30,11 +30,11 @@ public class SoundController : MonoBehaviour
         stormyAmbientSound.volume = 0;
     }
 
-    public void SetWeatherState(WeatherState newState)
+    public void SetWeatherState(SoundState newState)
     {
-        if (currentWeatherState != newState)
+        if (currentSoundState != newState)
         {
-            currentWeatherState = newState;
+            currentSoundState = newState;
             StartCoroutine(DelayedTransitionAudio());
         }
     }
@@ -53,8 +53,8 @@ public class SoundController : MonoBehaviour
         float elapsedTime = 0;
         float startCalmVolume = calmAmbientSound.volume;
         float startStormyVolume = stormyAmbientSound.volume;
-        float targetCalmVolume = (currentWeatherState == WeatherState.Calm) ? 1 : 0;
-        float targetStormyVolume = (currentWeatherState == WeatherState.Stormy) ? 1 : 0;
+        float targetCalmVolume = (currentSoundState == SoundState.Calm) ? 1 : 0;
+        float targetStormyVolume = (currentSoundState == SoundState.Stormy) ? 1 : 0;
 
         while (elapsedTime < transitionDuration)
         {
@@ -90,5 +90,20 @@ public class SoundController : MonoBehaviour
         {
             return Mathf.Lerp(1f, 0f - blendOverlap, t);
         }
+    }
+
+    public void SetCalmSound()
+    {
+        SetWeatherState(SoundState.Calm);
+    }
+
+    public void setStormySound()
+    {
+        SetWeatherState(SoundState.Stormy);
+    }
+
+    public SoundState getState()
+    {
+        return currentSoundState;
     }
 }

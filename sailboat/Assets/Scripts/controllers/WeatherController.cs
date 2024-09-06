@@ -164,8 +164,6 @@ public class WeatherController : MonoBehaviour
         tenkokuModule.weather_OvercastAmt = overcastAmt;
 
         tenkokuModule.weather_forceUpdate = true;
-
-        Debug.Log($"Weather updated - Rain: {rainAmt}, Fog: {fogAmt}, Lightning: {lightningAmt}, Overcast: {overcastAmt}");
     }
 
     private float GetTargetIntensity(WeatherState state)

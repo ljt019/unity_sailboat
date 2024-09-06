@@ -16,6 +16,7 @@ public class PromptController : MonoBehaviour
     private string currentDirection;
     private bool isHintDisplayed;
     private float hintDisplayTimer;
+    private bool isCurrentlyCorrect = false;
 
     private void Start()
     {
@@ -64,7 +65,21 @@ public class PromptController : MonoBehaviour
 
     public void UpdateDirectionFeedback(bool isCorrectDirection)
     {
-        promptText.color = isCorrectDirection ? correctDirectionColor : defaultColor;
+        if (isCorrectDirection)
+        {
+            promptText.color = correctDirectionColor;
+            isCurrentlyCorrect = true;
+        }
+        else
+        {
+            SetDefaultColor();
+            isCurrentlyCorrect = false;
+        }
+    }
+
+    public bool IsCurrentlyCorrect()
+    {
+        return isCurrentlyCorrect;
     }
 
     public void ClearPrompt()
@@ -80,7 +95,6 @@ public class PromptController : MonoBehaviour
         promptText.color = defaultColor;
     }
 
-    // Prompt Presets
     public void DirectionPrompt(string direction)
     {
         currentDirection = direction;
