@@ -8,7 +8,7 @@ public class PromptController : MonoBehaviour
 
     [Header("Prompt Color Settings")]
     [SerializeField] private Color defaultColor = Color.white;
-    [SerializeField] private Color correctDirectionColor = Color.green;
+    [SerializeField] private Color correctDirectionColor = Color.white;
 
     [Header("Hint Settings")]
     [SerializeField] private float hintDisplayDuration = 5f;
@@ -67,7 +67,6 @@ public class PromptController : MonoBehaviour
     {
         if (isCorrectDirection)
         {
-            promptText.color = correctDirectionColor;
             isCurrentlyCorrect = true;
         }
         else

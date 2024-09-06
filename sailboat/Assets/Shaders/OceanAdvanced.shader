@@ -306,8 +306,6 @@
 			float spec = specular(vertex_normal * 0.2 + detail_normal * 0.8, l, eye, 60.0);
 			baseColor.rgb += sun_color * spec;
 		#endif
-			
-		
 		#ifdef FOAM
 			half3 foamColor = tex2D(_Foam, i.world_position.xz * 0.1 + _Time.xx * 0.5 + distort).rgb;
 			//baseColor.rgb += foamColor * smoothstep(0.2, 1.5, depthFactor);
@@ -343,6 +341,13 @@
 			//ZWrite Off
 			//Cull Off
 		
+			Stencil
+			{
+				Ref 1
+				Comp NotEqual
+				Pass Keep
+			}
+
 			CGPROGRAM
 		 
 			#pragma target 3.0
@@ -357,4 +362,5 @@
 		}
 	}
 	Fallback "Transparent/Diffuse"
-}
+}	
+		
