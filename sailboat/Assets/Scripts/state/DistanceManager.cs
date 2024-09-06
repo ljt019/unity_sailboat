@@ -18,7 +18,6 @@ public class DistanceManager
             if (isCorrectDirection)
             {
                 correctDistanceTraveled += incrementalDistance;
-                incorrectDistanceTraveled = 0; // Reset incorrect distance when moving correctly
             }
             else
             {
