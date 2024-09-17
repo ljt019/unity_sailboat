@@ -1,0 +1,5 @@
+{
+    "UdpPort": 8080,
+    "MaxAdcValue": 1023.0,
+    "MinAdcValue": 0.0
+}

@@ -4,31 +4,62 @@ using System.Collections.Generic;
 public class TileController : MonoBehaviour
 {
     [Header("Entity References")]
-    [SerializeField] public GameObject waterTilePrefab;
-    [SerializeField] public Transform boatTransform;
-    [SerializeField] public OceanAdvanced oceanAdvanced;
+    [SerializeField] private GameObject waterTilePrefab;
+    [SerializeField] private Transform boatTransform;
+    [SerializeField] private OceanAdvanced oceanAdvanced;
 
     private Vector2Int currentGridPosition;
-    private Dictionary<Vector2Int, GameObject> tiles = new Dictionary<Vector2Int, GameObject>();
+    private readonly Dictionary<Vector2Int, GameObject> tiles = new Dictionary<Vector2Int, GameObject>();
     private float tileSize;
+    private Material oceanMaterial;
 
     void Start()
     {
-        if (oceanAdvanced == null)
-        {
-            Debug.LogError("OceanAdvanced reference is missing!");
-            return;
-        }
-
+        ValidateReferences();
         CalculateTileSize();
         currentGridPosition = WorldToGridPosition(boatTransform.position);
+        CacheOceanMaterial();
         CreateInitialTiles();
     }
 
-    void CalculateTileSize()
+    /// <summary>
+    /// Validates essential references to prevent runtime errors.
+    /// </summary>
+    private void ValidateReferences()
     {
-        Renderer prefabRenderer = waterTilePrefab.GetComponent<Renderer>();
-        if (prefabRenderer != null)
+        bool hasError = false;
+
+        if (oceanAdvanced == null)
+        {
+            Debug.LogError("OceanAdvanced reference is missing!");
+            hasError = true;
+        }
+
+        if (waterTilePrefab == null)
+        {
+            Debug.LogError("WaterTilePrefab is not assigned!");
+            hasError = true;
+        }
+
+        if (boatTransform == null)
+        {
+            Debug.LogError("BoatTransform is not assigned!");
+            hasError = true;
+        }
+
+        if (hasError)
+        {
+            // Disable the script to prevent further errors
+            this.enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// Calculates the size of a tile based on the prefab's renderer.
+    /// </summary>
+    private void CalculateTileSize()
+    {
+        if (waterTilePrefab.TryGetComponent<Renderer>(out Renderer prefabRenderer))
         {
             tileSize = prefabRenderer.bounds.size.x;
             Debug.Log($"Calculated tile size: {tileSize}");
@@ -40,80 +71,151 @@ public class TileController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Caches the ocean material for efficient reuse.
+    /// </summary>
+    private void CacheOceanMaterial()
+    {
+        if (oceanAdvanced?.ocean != null)
+        {
+            oceanMaterial = oceanAdvanced.ocean;
+        }
+        else
+        {
+            Debug.LogError("OceanAdvanced.ocean material is missing!");
+        }
+    }
+
     void Update()
     {
         Vector2Int newGridPosition = WorldToGridPosition(boatTransform.position);
         if (newGridPosition != currentGridPosition)
         {
-            UpdateTilePositions(newGridPosition);
+            Vector2Int delta = newGridPosition - currentGridPosition;
+            UpdateTilePositions(newGridPosition, delta);
             currentGridPosition = newGridPosition;
         }
 
-        // Update ocean position
-        oceanAdvanced.transform.position = new Vector3(boatTransform.position.x, oceanAdvanced.transform.position.y, boatTransform.position.z);
+        UpdateOceanPosition();
     }
 
-    void CreateInitialTiles()
+    /// <summary>
+    /// Updates the ocean's position to follow the boat.
+    /// </summary>
+    private void UpdateOceanPosition()
+    {
+        Vector3 boatPos = boatTransform.position;
+        Vector3 oceanPos = oceanAdvanced.transform.position;
+        oceanAdvanced.transform.position = new Vector3(boatPos.x, oceanPos.y, boatPos.z);
+    }
+
+    /// <summary>
+    /// Creates the initial 3x3 grid of water tiles around the boat.
+    /// </summary>
+    private void CreateInitialTiles()
     {
         for (int x = -1; x <= 1; x++)
         {
             for (int z = -1; z <= 1; z++)
             {
-                Vector2Int gridPos = new Vector2Int(x, z);
-                CreateTileAt(currentGridPosition + gridPos);
+                Vector2Int gridOffset = new Vector2Int(x, z);
+                Vector2Int gridPos = currentGridPosition + gridOffset;
+                CreateTileAt(gridPos);
             }
         }
     }
 
-    void UpdateTilePositions(Vector2Int newCenterGridPos)
+    /// <summary>
+    /// Updates tile positions based on the movement delta.
+    /// </summary>
+    /// <param name="newCenterGridPos">New center grid position.</param>
+    /// <param name="delta">Change in grid position.</param>
+    private void UpdateTilePositions(Vector2Int newCenterGridPos, Vector2Int delta)
     {
-        HashSet<Vector2Int> newPositions = new HashSet<Vector2Int>();
-        HashSet<Vector2Int> oldPositions = new HashSet<Vector2Int>(tiles.Keys);
-
-        for (int x = -1; x <= 1; x++)
+        // Shift tiles horizontally based on delta.x
+        if (delta.x != 0)
         {
-            for (int z = -1; z <= 1; z++)
+            int directionX = (int)Mathf.Sign(delta.x);
+            for (int i = 0; i < Mathf.Abs(delta.x); i++)
             {
-                Vector2Int gridPos = newCenterGridPos + new Vector2Int(x, z);
-                newPositions.Add(gridPos);
+                ShiftTilesAlongX(directionX);
+            }
+        }
 
-                if (!tiles.ContainsKey(gridPos))
-                {
-                    // If there's no tile at this position, move an old tile here
-                    Vector2Int oldPos = FindFurthestTile(newCenterGridPos, oldPositions);
-                    if (oldPos != gridPos)
-                    {
-                        MoveTile(oldPos, gridPos);
-                        oldPositions.Remove(oldPos);
-                    }
-                }
+        // Shift tiles vertically based on delta.y
+        if (delta.y != 0)
+        {
+            int directionY = (int)Mathf.Sign(delta.y);
+            for (int i = 0; i < Mathf.Abs(delta.y); i++)
+            {
+                ShiftTilesAlongY(directionY);
             }
         }
 
         // Ensure we always have exactly 9 tiles
-        Debug.Assert(tiles.Count == 9, "There should always be exactly 9 tiles.");
+        if (tiles.Count != 9)
+        {
+            Debug.LogWarning($"Tile count mismatch: Expected 9, Found {tiles.Count}");
+        }
     }
 
-    Vector2Int FindFurthestTile(Vector2Int center, HashSet<Vector2Int> availablePositions)
+    /// <summary>
+    /// Shifts tiles along the X-axis.
+    /// </summary>
+    /// <param name="direction">1 for right, -1 for left.</param>
+    private void ShiftTilesAlongX(int direction)
     {
-        Vector2Int furthest = center;
-        float maxDistanceSq = float.MinValue;
+        List<Vector2Int> tilesToMove = new List<Vector2Int>();
 
-        foreach (Vector2Int pos in availablePositions)
+        // Identify tiles on the opposite edge to move
+        foreach (var pos in tiles.Keys)
         {
-            float distanceSq = (pos - center).sqrMagnitude;
-            if (distanceSq > maxDistanceSq)
+            if ((direction > 0 && pos.x == currentGridPosition.x - 1) ||
+                (direction < 0 && pos.x == currentGridPosition.x + 1))
             {
-                maxDistanceSq = distanceSq;
-                furthest = pos;
+                tilesToMove.Add(pos);
             }
         }
 
-        return furthest;
+        // Move identified tiles to the new edge
+        foreach (var oldPos in tilesToMove)
+        {
+            Vector2Int newPos = new Vector2Int(oldPos.x + (direction * 2), oldPos.y);
+            MoveTile(oldPos, newPos);
+        }
     }
 
+    /// <summary>
+    /// Shifts tiles along the Y-axis.
+    /// </summary>
+    /// <param name="direction">1 for forward, -1 for backward.</param>
+    private void ShiftTilesAlongY(int direction)
+    {
+        List<Vector2Int> tilesToMove = new List<Vector2Int>();
 
-    void CreateTileAt(Vector2Int gridPos)
+        // Identify tiles on the opposite edge to move
+        foreach (var pos in tiles.Keys)
+        {
+            if ((direction > 0 && pos.y == currentGridPosition.y - 1) ||
+                (direction < 0 && pos.y == currentGridPosition.y + 1))
+            {
+                tilesToMove.Add(pos);
+            }
+        }
+
+        // Move identified tiles to the new edge
+        foreach (var oldPos in tilesToMove)
+        {
+            Vector2Int newPos = new Vector2Int(oldPos.x, oldPos.y + (direction * 2));
+            MoveTile(oldPos, newPos);
+        }
+    }
+
+    /// <summary>
+    /// Creates a tile at the specified grid position.
+    /// </summary>
+    /// <param name="gridPos">Grid position to place the tile.</param>
+    private void CreateTileAt(Vector2Int gridPos)
     {
         Vector3 worldPos = GridToWorldPosition(gridPos);
         GameObject tile = Instantiate(waterTilePrefab, worldPos, Quaternion.identity, transform);
@@ -121,7 +223,12 @@ public class TileController : MonoBehaviour
         tiles[gridPos] = tile;
     }
 
-    void MoveTile(Vector2Int oldGridPos, Vector2Int newGridPos)
+    /// <summary>
+    /// Moves a tile from an old grid position to a new grid position.
+    /// </summary>
+    /// <param name="oldGridPos">Current grid position of the tile.</param>
+    /// <param name="newGridPos">New grid position to move the tile to.</param>
+    private void MoveTile(Vector2Int oldGridPos, Vector2Int newGridPos)
     {
         if (tiles.TryGetValue(oldGridPos, out GameObject tile))
         {
@@ -131,20 +238,32 @@ public class TileController : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"Tried to move non-existent tile from {oldGridPos} to {newGridPos}");
+            Debug.LogError($"Attempted to move non-existent tile from {oldGridPos} to {newGridPos}");
         }
     }
 
-    void ApplyOceanToTile(GameObject tile)
+    /// <summary>
+    /// Applies the ocean material to a tile.
+    /// </summary>
+    /// <param name="tile">Tile GameObject.</param>
+    private void ApplyOceanToTile(GameObject tile)
     {
-        Renderer tileRenderer = tile.GetComponent<Renderer>();
-        if (tileRenderer != null && oceanAdvanced.ocean != null)
+        if (tile.TryGetComponent<Renderer>(out Renderer tileRenderer) && oceanMaterial != null)
         {
-            tileRenderer.material = oceanAdvanced.ocean;
+            tileRenderer.material = oceanMaterial;
+        }
+        else
+        {
+            Debug.LogError("Tile Renderer or Ocean Material is missing!");
         }
     }
 
-    Vector2Int WorldToGridPosition(Vector3 worldPos)
+    /// <summary>
+    /// Converts world position to grid position.
+    /// </summary>
+    /// <param name="worldPos">World position.</param>
+    /// <returns>Grid position as Vector2Int.</returns>
+    private Vector2Int WorldToGridPosition(Vector3 worldPos)
     {
         return new Vector2Int(
             Mathf.RoundToInt(worldPos.x / tileSize),
@@ -152,12 +271,29 @@ public class TileController : MonoBehaviour
         );
     }
 
-    Vector3 GridToWorldPosition(Vector2Int gridPos)
+    /// <summary>
+    /// Converts grid position to world position.
+    /// </summary>
+    /// <param name="gridPos">Grid position as Vector2Int.</param>
+    /// <returns>World position as Vector3.</returns>
+    private Vector3 GridToWorldPosition(Vector2Int gridPos)
     {
         return new Vector3(
             gridPos.x * tileSize,
             0,
             gridPos.y * tileSize
         );
+    }
+
+    /// <summary>
+    /// Helper method to get the sign of an integer as an integer.
+    /// </summary>
+    /// <param name="value">Input integer.</param>
+    /// <returns>-1, 0, or 1 based on the sign of the input.</returns>
+    private int GetSign(int value)
+    {
+        if (value > 0) return 1;
+        if (value < 0) return -1;
+        return 0;
     }
 }

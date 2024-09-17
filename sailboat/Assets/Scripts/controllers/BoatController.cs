@@ -30,22 +30,20 @@ public class BoatController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         floatingEntity = GetComponent<FloatingGameEntityRealist>();
 
-        // Initialize UDP receiver
-        udpReceiver = new UdpReceiver();
-        udpReceiver.StartReceiving(udpPort);
+        // Initialize UDP receiver with the specified port
+        udpReceiver = new UdpReceiver(udpPort);
     }
 
     private void OnDestroy()
     {
-        if (udpReceiver != null)
-        {
-            udpReceiver.Stop();
-        }
+        // Properly dispose of the UDP receiver to release resources
+        udpReceiver?.Dispose();
     }
 
     private void Update()
     {
         ProcessUdpMessages();
+        ProcessLogMessages(); // Optional: Handle log messages
     }
 
     private void FixedUpdate()
@@ -65,6 +63,18 @@ public class BoatController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Optional: Processes and logs any messages from the UDP receiver.
+    /// </summary>
+    private void ProcessLogMessages()
+    {
+        string[] logs = udpReceiver.GetLogMessages();
+        foreach (string log in logs)
+        {
+            Debug.Log($"[UdpReceiver] {log}");
+        }
+    }
+
     private void ApplyMotorForce()
     {
         // Apply constant forward force
@@ -81,7 +91,7 @@ public class BoatController : MonoBehaviour
         float steeringInput = CombineSteeringInputs(keyboardInput, potentiometerValue);
 
         // Smooth the steering input
-        currentSteerAngle = Mathf.Lerp(currentSteerAngle, steeringInput, turningResponseTime);
+        currentSteerAngle = Mathf.Lerp(currentSteerAngle, steeringInput, turningResponseTime * Time.fixedDeltaTime);
 
         Vector3 steeringForce = transform.right * turnForce * currentSteerAngle;
         rb.AddForceAtPosition(steeringForce, transform.position - transform.forward * 2f);
